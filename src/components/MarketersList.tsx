@@ -25,7 +25,9 @@ import {
   Sparkles,
   Info,
   Printer,
-  Download
+  Download,
+  Database,
+  Upload
 } from "lucide-react";
 import { motion } from "motion/react";
 import { downloadIDCard } from "../utils/cardUtils";
@@ -202,6 +204,12 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
   const [printReceiptTarget, setPrintReceiptTarget] = useState<Marketer | null>(null);
   const [printSlipTarget, setPrintSlipTarget] = useState<Marketer | null>(null);
 
+  // Database Backup / Sync States
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncDirection, setSyncDirection] = useState<"export" | "import">("export");
+  const [syncString, setSyncString] = useState("");
+  const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // Helper trigger to open marketer details with loaded payment context
   const selectMarketerWithPaymentInit = (marketer: Marketer | null) => {
     setSelectedMarketer(marketer);
@@ -238,6 +246,70 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
       setPaymentError(err.message || "Could not connect to payment server.");
     } finally {
       setUpdatingPayment(false);
+    }
+  };
+
+  const handleExportDataByJson = () => {
+    try {
+      const raw = localStorage.getItem("campmark_fallback_db");
+      if (raw) {
+        setSyncString(raw);
+        setSyncMessage({ type: "success", text: "Successfully read Local Storage fallback data from this browser!" });
+      } else {
+        // If there is no local storage but we have state data, make a JSON from state
+        const obj = { marketers: marketers, activities: [] };
+        setSyncString(JSON.stringify(obj, null, 2));
+        setSyncMessage({ type: "success", text: "Formatted current live directory list into sync code." });
+      }
+    } catch (e) {
+      setSyncMessage({ type: "error", text: "Could not read localStorage fallback database on this phone." });
+    }
+  };
+
+  const handleImportDataByJson = async () => {
+    if (!syncString.trim()) {
+      setSyncMessage({ type: "error", text: "Please paste a valid JSON sync code." });
+      return;
+    }
+    
+    try {
+      const parsed = JSON.parse(syncString);
+      if (!parsed || (!Array.isArray(parsed.marketers) && !Array.isArray(parsed))) {
+        throw new Error("Invalid structure. Sync code must be a valid JSON package.");
+      }
+
+      const listToImport = Array.isArray(parsed) ? parsed : parsed.marketers;
+      
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const m of listToImport) {
+        if (!m.fullName || !m.businessName || !m.phone || !m.standNumber) {
+          continue; // skip invalid objects
+        }
+        try {
+          await api.registerMarketer({
+            fullName: m.fullName,
+            businessName: m.businessName,
+            phone: m.phone,
+            standNumber: m.standNumber,
+            category: m.category || "General",
+            description: m.description,
+            photo: m.photo
+          });
+          successCount++;
+        } catch (e: any) {
+          errorCount++;
+        }
+      }
+
+      setSyncMessage({
+        type: "success",
+        text: `Batch Synced! Successfully imported ${successCount} stands. ${errorCount} records were already present or skipped.`
+      });
+      await onRefresh();
+    } catch (e: any) {
+      setSyncMessage({ type: "error", text: `Verification of code failed: ${e.message}` });
     }
   };
 
@@ -1322,13 +1394,28 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
     <div className="flex-1 overflow-y-auto bg-slate-950 p-6 sm:p-8 font-sans">
       
       {/* Directory Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5 mb-8">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 border-b border-slate-800 pb-5 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Active Stands Directory</h1>
           <p className="text-xs text-slate-400 mt-1">Operational viewports, detail records, and staff management for active campaign stands.</p>
         </div>
-        <div className="text-xs text-emerald-405 font-mono bg-emerald-950/40 border border-emerald-500/20 px-3 py-1 rounded-xl">
-          TOTAL RECORDED STANDS: <strong className="text-slate-100 font-extrabold font-sans text-xs">{marketers.length}</strong>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => {
+              setSyncDirection("export");
+              handleExportDataByJson();
+              setShowSyncModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 font-mono text-[11px] font-bold rounded-xl cursor-pointer transition-all"
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>BRIDGE DEVICE SYNC CODE</span>
+          </button>
+          
+          <div className="text-xs text-emerald-400 font-mono bg-emerald-950/40 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
+            TOTAL RECORDED STANDS: <strong className="text-slate-100 font-extrabold font-sans text-xs">{marketers.length}</strong>
+          </div>
         </div>
       </div>
 
@@ -2711,6 +2798,117 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               <span className="block text-[6px] text-slate-400 mt-1 uppercase font-mono select-none">TACTICAL VERIFICATION BARCODE KEY</span>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {showSyncModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-slate-100 text-sm">Bridge Device Data Synchronizer</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSyncModal(false);
+                  setSyncMessage(null);
+                }}
+                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Selector tabs */}
+            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl mb-4 shrink-0">
+              <button
+                onClick={() => {
+                  setSyncDirection("export");
+                  handleExportDataByJson();
+                  setSyncMessage(null);
+                }}
+                className={`py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-all ${syncDirection === "export" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-450 hover:text-slate-250'}`}
+              >
+                1. EXPORT SYNC CODE
+              </button>
+              <button
+                onClick={() => {
+                  setSyncDirection("import");
+                  setSyncString("");
+                  setSyncMessage(null);
+                }}
+                className={`py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-all ${syncDirection === "import" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-450 hover:text-slate-250'}`}
+              >
+                2. IMPORT SYNC CODE
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[11px] text-slate-400 leading-relaxed mb-4 shrink-0">
+              {syncDirection === "export" 
+                ? "If you have registered marketer stands on your mobile phone or at the campmarts.netlify.app domain, click the copy button below to prepare a Sync Code package of your local database registers." 
+                : "Paste the exported Sync Code package from another phone, device, or fallback domain here to merge those registrations into the active server database."}
+            </p>
+
+            {/* Msg banner */}
+            {syncMessage && (
+              <div className={`p-3 rounded-xl border mb-4 text-xs ${syncMessage.type === "success" ? 'bg-emerald-950/40 border-emerald-500/20 text-emerald-300' : 'bg-rose-950/40 border-rose-500/20 text-rose-300'} shrink-0`}>
+                {syncMessage.text}
+              </div>
+            )}
+
+            {/* Input area */}
+            <div className="flex-1 overflow-y-auto mb-5 min-h-[140px]">
+              <textarea
+                readOnly={syncDirection === "export"}
+                value={syncString}
+                onChange={(e) => setSyncString(e.target.value)}
+                placeholder='Paste Sync Code JSON package here (starts with {"marketers": [...])...'
+                className="w-full h-full bg-slate-950 border border-slate-800 text-slate-350 p-3 rounded-2xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono text-[10px] resize-none"
+              />
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex justify-end gap-3 border-t border-slate-800 pt-4 shrink-0">
+              <button
+                onClick={() => {
+                  setShowSyncModal(false);
+                  setSyncMessage(null);
+                }}
+                className="py-2 px-4 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 text-xs font-semibold rounded-xl cursor-pointer transition-all"
+              >
+                Close
+              </button>
+              
+              {syncDirection === "export" ? (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(syncString);
+                    setSyncMessage({ type: "success", text: "Sync Code copied to clipboard! Share it with the Admin or import it." });
+                  }}
+                  disabled={!syncString}
+                  className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Copy Sync Code</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleImportDataByJson}
+                  disabled={!syncString.trim()}
+                  className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Verify & Sync Now</span>
+                </button>
+              )}
+            </div>
+            
           </div>
         </div>
       )}
