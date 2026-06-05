@@ -1,0 +1,6 @@
+{
+  "name": "NYSC Katsina Camp Market",
+  "description": "Official NYSC Camp Market registration, ledger tracking, and staff ID badge generation system for Katsina State.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.45);
+}
+
+/* Print Specific Layout isolating badges & receipts */
+@media screen {
+  .print-only, .print-receipt-only {
+    display: none !important;
+  }
+}
+
+@media print {
+  /* Hide typical screen scrollbars and scroll views */
+  html, body {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  /* Hide all screen components */
+  body * {
+    visibility: hidden !important;
+  }
+  
+  /* Show only the designated printable elements */
+  .print-only, .print-only * {
+    visibility: visible !important;
+  }
+  
+  .print-receipt-only, .print-receipt-only * {
+    visibility: visible !important;
+  }
+  
+  .print-only {
+    display: grid !important;
+    grid-template-cols: 1fr 1fr !important;
+    gap: 2rem !important;
+    position: absolute !important;
+    left: 20px !important;
+    top: 40px !important;
+    width: calc(100% - 40px) !important;
+    background: transparent !important;
+    z-index: 9999999 !important;
+  }
+
+  .print-receipt-only {
+    display: block !important;
+    position: absolute !important;
+    left: 20px !important;
+    top: 20px !important;
+    width: calc(100% - 40px) !important;
+    background: transparent !important;
+    z-index: 9999999 !important;
+  }
+  
+  /* Suppress browser headers and footers */
+  @page {
+    margin: 0.5cm;
+    size: portrait;
+  }
+}
