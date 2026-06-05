@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { api } from "../utils/api";
 import { 
   Building2, 
   UserPlus, 
@@ -149,25 +150,15 @@ export default function RegisterForm({ onSuccess, onNavigate }: RegisterFormProp
       : `preset:${selectedPreset}`;
 
     try {
-      const response = await fetch("/api/marketers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          businessName,
-          phone,
-          standNumber: standNumber.toUpperCase(),
-          category,
-          description,
-          photo: finalPhoto
-        })
+      await api.registerMarketer({
+        fullName,
+        businessName,
+        phone,
+        standNumber: standNumber.toUpperCase(),
+        category,
+        description,
+        photo: finalPhoto
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to commit marketer profile registration.");
-      }
 
       setFormSuccess(true);
       onSuccess();

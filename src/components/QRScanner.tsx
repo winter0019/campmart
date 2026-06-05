@@ -86,21 +86,112 @@ export default function QRScanner({ marketers }: QRScannerProps) {
     setTimeout(async () => {
       try {
         const response = await fetch(`/api/verify/${queryId}`);
-        const data = await response.json();
+        const responseText = await response.text();
+        const isHtml = responseText.trim().startsWith("<!DOCTYPE") || responseText.trim().startsWith("<html");
 
-        if (response.ok) {
+        if (response.ok && !isHtml) {
+          const data = JSON.parse(responseText);
           setScannedResult({
             valid: true,
             type: data.type,
             details: data.details
           });
         } else {
+          // Fall back to client-side local registry lookup
+          const marketer = marketers.find(m => m.id === queryId);
+          if (marketer) {
+            setScannedResult({
+              valid: true,
+              type: "Marketer",
+              details: {
+                id: marketer.id,
+                name: marketer.fullName,
+                business: marketer.businessName,
+                phone: marketer.phone,
+                standNumber: marketer.standNumber,
+                category: marketer.category,
+                role: "Primary Registrant",
+                createdAt: marketer.createdAt,
+                photo: marketer.photo
+              }
+            });
+            return;
+          }
+
+          // Search in workers
+          for (const m of marketers) {
+            const worker = m.workers.find(w => w.id === queryId);
+            if (worker) {
+              setScannedResult({
+                valid: true,
+                type: "Staff / Worker",
+                details: {
+                  id: worker.id,
+                  name: worker.fullName,
+                  phone: worker.phone,
+                  role: worker.role,
+                  business: m.businessName,
+                  standNumber: m.standNumber,
+                  category: m.category,
+                  primaryContact: m.fullName,
+                  photo: worker.photo || m.photo,
+                  createdAt: worker.createdAt
+                }
+              });
+              return;
+            }
+          }
+
           setScannedResult({
             valid: false,
-            error: data.error || "Tactical ID coordinate not identified."
+            error: "Tactical ID coordinate not identified."
           });
         }
       } catch (err: any) {
+        // Safe Client-Side search upon fetch error
+        const marketer = marketers.find(m => m.id === queryId);
+        if (marketer) {
+          setScannedResult({
+            valid: true,
+            type: "Marketer",
+            details: {
+              id: marketer.id,
+              name: marketer.fullName,
+              business: marketer.businessName,
+              phone: marketer.phone,
+              standNumber: marketer.standNumber,
+              category: marketer.category,
+              role: "Primary Registrant",
+              createdAt: marketer.createdAt,
+              photo: marketer.photo
+            }
+          });
+          return;
+        }
+
+        for (const m of marketers) {
+          const worker = m.workers.find(w => w.id === queryId);
+          if (worker) {
+            setScannedResult({
+              valid: true,
+              type: "Staff / Worker",
+              details: {
+                id: worker.id,
+                name: worker.fullName,
+                phone: worker.phone,
+                role: worker.role,
+                business: m.businessName,
+                standNumber: m.standNumber,
+                category: m.category,
+                primaryContact: m.fullName,
+                photo: worker.photo || m.photo,
+                createdAt: worker.createdAt
+              }
+            });
+            return;
+          }
+        }
+
         setScannedResult({
           valid: false,
           error: "Unable to reach tactical lookup server."

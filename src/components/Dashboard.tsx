@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { api } from "../utils/api";
 import { 
   Building2, 
   UserSquare2, 
@@ -52,11 +53,7 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
   // Fetch stats from backend
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/stats");
-      if (!response.ok) {
-        throw new Error("Unable to retrieve tactical statistics.");
-      }
-      const data = await response.json();
+      const data = await api.getStats(marketers);
       setStats(data);
     } catch (err: any) {
       setError(err.message || "Failed to contact database statistics service.");
@@ -72,13 +69,9 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
   const handleSimulateAction = async () => {
     setSimulationLoading(true);
     try {
-      const response = await fetch("/api/simulate-action", {
-        method: "POST"
-      });
-      if (response.ok) {
-        await fetchStats();
-        await onRefreshAllData();
-      }
+      await api.simulateAction();
+      await fetchStats();
+      await onRefreshAllData();
     } catch (err) {
       console.error("Action simulation error:", err);
     } finally {

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { api } from "../utils/api";
 import { 
   KeyRound, 
   ShieldAlert, 
@@ -101,18 +102,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Authentication failed.");
-      }
-
+      const data = await api.login(username, password);
       onLoginSuccess(data.user, data.token);
     } catch (err: any) {
       setError(err.message || "Unable to reach security gateway.");
@@ -136,25 +126,15 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       : `preset:${selectedPreset}`;
 
     try {
-      const response = await fetch("/api/marketers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          businessName,
-          phone,
-          standNumber: standNumber.toUpperCase(),
-          category,
-          description: description || "Camp Marketer business stand.",
-          photo: finalPhoto
-        })
+      await api.registerMarketer({
+        fullName,
+        businessName,
+        phone,
+        standNumber: standNumber.toUpperCase(),
+        category,
+        description: description || "Camp Marketer business stand.",
+        photo: finalPhoto
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to commit marketer profile registration.");
-      }
 
       setRegSuccess(true);
       // Pre-fill login credentials for them as helper!

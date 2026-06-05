@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { api } from "../utils/api";
 import { 
   Building2, 
   Search, 
@@ -221,17 +222,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
     setPaymentSuccess(false);
 
     try {
-      const response = await fetch(`/api/marketers/${marketerId}/payment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountPaid: parsedAmount })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update payment records.");
-      }
+      await api.updatePayment(marketerId, parsedAmount);
 
       setPaymentSuccess(true);
       if (selectedMarketer) {
@@ -346,14 +337,10 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
 
   const handleDeleteMarketer = async (id: string) => {
     try {
-      const response = await fetch(`/api/marketers/${id}`, {
-        method: "DELETE"
-      });
-      if (response.ok) {
-        setSelectedMarketer(null);
-        setDeletingMarketer(null);
-        await onRefresh();
-      }
+      await api.deleteMarketer(id);
+      setSelectedMarketer(null);
+      setDeletingMarketer(null);
+      await onRefresh();
     } catch (err) {
       console.error("Deregistration error:", err);
     }
@@ -374,22 +361,12 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
       : `preset:${workerPreset}`;
 
     try {
-      const response = await fetch(`/api/marketers/${targetId}/workers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: workerName,
-          phone: workerPhone,
-          role: workerRole,
-          photo: finalWorkerPhoto
-        })
+      const data = await api.addWorker(targetId, {
+        fullName: workerName,
+        phone: workerPhone,
+        role: workerRole,
+        photo: finalWorkerPhoto
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to save worker registration.");
-      }
 
       // If viewing in active admin modal, sync modal's active state
       if (selectedMarketer && selectedMarketer.id === targetId) {
@@ -415,18 +392,14 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
 
   const handleDeleteWorker = async (workerId: string, currentMarketerObj?: Marketer) => {
     try {
-      const response = await fetch(`/api/workers/${workerId}`, {
-        method: "DELETE"
-      });
-      if (response.ok) {
-        if (selectedMarketer) {
-          setSelectedMarketer({
-            ...selectedMarketer,
-            workers: selectedMarketer.workers.filter(w => w.id !== workerId)
-          });
-        }
-        await onRefresh();
+      await api.deleteWorker(workerId);
+      if (selectedMarketer) {
+        setSelectedMarketer({
+          ...selectedMarketer,
+          workers: selectedMarketer.workers.filter(w => w.id !== workerId)
+        });
       }
+      await onRefresh();
     } catch (err) {
       console.error("Worker removal error:", err);
     }
@@ -447,14 +420,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
       setSelfPhotoSuccess(false);
 
       try {
-        const res = await fetch(`/api/photos/${marketerId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ photo: base64 })
-        });
-        if (!res.ok) {
-          throw new Error("Failed to register image file.");
-        }
+        await api.updatePhoto(marketerId, base64);
         await onRefresh();
         setSelfPhotoSuccess(true);
         setTimeout(() => setSelfPhotoSuccess(false), 3000);
@@ -480,11 +446,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
       setUploadingWorkerPhotoId(workerId);
 
       try {
-        const res = await fetch(`/api/photos/${workerId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ photo: base64 })
-        });
+        await api.updatePhoto(workerId, base64);
         if (selectedMarketer) {
           // Update the localized modal state too
           const updatedWorkers = selectedMarketer.workers.map(w => {
@@ -1151,18 +1113,12 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                       <select
                         value={selectedMarketer.verificationStatus || "pending"}
                         onChange={async (e) => {
-                          const newStatus = e.target.value;
+                          const newStatus = e.target.value as "verified" | "pending" | "review";
                           try {
-                            const res = await fetch(`/api/marketers/${selectedMarketer.id}/status`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ status: newStatus }),
-                            });
-                            if (res.ok) {
-                              const updated = { ...selectedMarketer, verificationStatus: newStatus as any };
-                              setSelectedMarketer(updated);
-                              await onRefresh();
-                            }
+                            await api.updateVerificationStatus(selectedMarketer.id, newStatus);
+                            const updated = { ...selectedMarketer, verificationStatus: newStatus };
+                            setSelectedMarketer(updated);
+                            await onRefresh();
                           } catch (err) {
                             console.error("Failed to update status", err);
                           }

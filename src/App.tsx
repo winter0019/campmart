@@ -8,6 +8,7 @@ import IDCardGenerator from "./components/IDCardGenerator";
 import QRScanner from "./components/QRScanner";
 import { AuthState, Marketer } from "./types";
 import { Clock, RefreshCw, KeyRound, Signal, Server, Globe } from "lucide-react";
+import { api } from "./utils/api";
 
 export default function App() {
   // Authentication local session storage setup
@@ -51,11 +52,7 @@ export default function App() {
   const fetchMarketers = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/marketers");
-      if (!response.ok) {
-        throw new Error("Failed to contact stands directory.");
-      }
-      const data = await response.json();
+      const data = await api.getMarketers();
       setMarketers(data);
       setError(null);
     } catch (err: any) {
