@@ -206,9 +206,10 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
 
   // Database Backup / Sync States
   const [showSyncModal, setShowSyncModal] = useState(false);
-  const [syncDirection, setSyncDirection] = useState<"export" | "import">("export");
+  const [syncDirection, setSyncDirection] = useState<"export" | "import" | "gateway">("export");
   const [syncString, setSyncString] = useState("");
   const [syncMessage, setSyncMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [customServerUrl, setCustomServerUrl] = useState(() => localStorage.getItem("campmark_server_url") || "");
 
   // Helper trigger to open marketer details with loaded payment context
   const selectMarketerWithPaymentInit = (marketer: Marketer | null) => {
@@ -2825,16 +2826,16 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
 
             {/* Selector tabs */}
-            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl mb-4 shrink-0">
+            <div className="grid grid-cols-3 gap-1.5 bg-slate-950 p-1 rounded-xl mb-4 shrink-0">
               <button
                 onClick={() => {
                   setSyncDirection("export");
                   handleExportDataByJson();
                   setSyncMessage(null);
                 }}
-                className={`py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-all ${syncDirection === "export" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-450 hover:text-slate-250'}`}
+                className={`py-2 text-[10px] font-bold rounded-lg cursor-pointer transition-all truncate ${syncDirection === "export" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-400 hover:text-slate-200'}`}
               >
-                1. EXPORT SYNC CODE
+                1. EXPORT
               </button>
               <button
                 onClick={() => {
@@ -2842,9 +2843,18 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                   setSyncString("");
                   setSyncMessage(null);
                 }}
-                className={`py-2 text-[11px] font-bold rounded-lg cursor-pointer transition-all ${syncDirection === "import" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-450 hover:text-slate-250'}`}
+                className={`py-2 text-[10px] font-bold rounded-lg cursor-pointer transition-all truncate ${syncDirection === "import" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-400 hover:text-slate-200'}`}
               >
-                2. IMPORT SYNC CODE
+                2. IMPORT
+              </button>
+              <button
+                onClick={() => {
+                  setSyncDirection("gateway");
+                  setSyncMessage(null);
+                }}
+                className={`py-2 text-[10px] font-bold rounded-lg cursor-pointer transition-all truncate ${syncDirection === "gateway" ? 'bg-slate-900 text-emerald-400 border border-emerald-500/10' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                3. LINK DEVICE
               </button>
             </div>
 
@@ -2852,7 +2862,9 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             <p className="text-[11px] text-slate-400 leading-relaxed mb-4 shrink-0">
               {syncDirection === "export" 
                 ? "If you have registered marketer stands on your mobile phone or at the campmarts.netlify.app domain, click the copy button below to prepare a Sync Code package of your local database registers." 
-                : "Paste the exported Sync Code package from another phone, device, or fallback domain here to merge those registrations into the active server database."}
+                : syncDirection === "import"
+                  ? "Paste the exported Sync Code package from another phone, device, or fallback domain here to merge those registrations into the active server database."
+                  : "Sync multi-device registers together in real-time by linking local devices directly to a centralized server Gateway URL."}
             </p>
 
             {/* Msg banner */}
@@ -2862,15 +2874,47 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               </div>
             )}
 
-            {/* Input area */}
+            {/* Input area / Form */}
             <div className="flex-1 overflow-y-auto mb-5 min-h-[140px]">
-              <textarea
-                readOnly={syncDirection === "export"}
-                value={syncString}
-                onChange={(e) => setSyncString(e.target.value)}
-                placeholder='Paste Sync Code JSON package here (starts with {"marketers": [...])...'
-                className="w-full h-full bg-slate-950 border border-slate-800 text-slate-350 p-3 rounded-2xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono text-[10px] resize-none"
-              />
+              {syncDirection === "gateway" ? (
+                <div className="space-y-4 p-4 bg-slate-950 rounded-2xl border border-slate-850 text-xs">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-emerald-400 font-bold tracking-wider uppercase text-[9px]">Server Gateway Hub</label>
+                    <p className="text-slate-400 leading-normal text-[11px]">
+                      By default, devices connect directly to the server they are launched from. If you are on an offline mirror or static Netlify copy, you can link it directly to the master server below.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase font-semibold text-slate-450">Cloud Run Server URL</label>
+                    <input
+                      type="url"
+                      value={customServerUrl}
+                      onChange={(e) => setCustomServerUrl(e.target.value)}
+                      placeholder="e.g. https://ais-pre-xxxxxxxx.run.app"
+                      className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 text-slate-200 px-3 py-2 rounded-xl text-xs font-mono focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-1 text-[11px]">
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">This Active Gateway:</div>
+                    <div className="font-mono text-[11px] text-emerald-400 select-all overflow-x-auto whitespace-nowrap bg-slate-950/80 p-1.5 rounded-lg border border-slate-850">
+                      {window.location.origin}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-normal pt-1">
+                      💡 copy this Gateway URL above, and paste it into the "LINK DEVICE" Gateway URL on your phones or Netlify browser to link everyone to this central master registry database!
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <textarea
+                  readOnly={syncDirection === "export"}
+                  value={syncString}
+                  onChange={(e) => setSyncString(e.target.value)}
+                  placeholder='Paste Sync Code JSON package here (starts with {"marketers": [...])...'
+                  className="w-full h-full bg-slate-950 border border-slate-800 text-slate-350 p-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono text-[10px] resize-none"
+                />
+              )}
             </div>
 
             {/* Bottom Actions */}
@@ -2885,7 +2929,26 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 Close
               </button>
               
-              {syncDirection === "export" ? (
+              {syncDirection === "gateway" ? (
+                <button
+                  onClick={() => {
+                    if (customServerUrl.trim()) {
+                      localStorage.setItem("campmark_server_url", customServerUrl.trim());
+                      setSyncMessage({ type: "success", text: "Successfully saved Server Gateway! Reloading the app to apply..." });
+                    } else {
+                      localStorage.removeItem("campmark_server_url");
+                      setSyncMessage({ type: "success", text: "Reset to standard automatic relative API routing. Reloading..." });
+                    }
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 1200);
+                  }}
+                  className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Update & Link Device</span>
+                </button>
+              ) : syncDirection === "export" ? (
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(syncString);

@@ -62,12 +62,30 @@ async function isHtmlResponse(response: Response): Promise<{ isHtml: boolean; te
   }
 }
 
+// dynamic API endpoint resolver for CORS environments (e.g. Netlify)
+function getApiUrl(path: string): string {
+  const savedUrl = localStorage.getItem("campmark_server_url");
+  if (savedUrl) {
+    const cleanUrl = savedUrl.replace(/\/+$/, "");
+    return `${cleanUrl}${path}`;
+  }
+
+  const host = window.location.host;
+  // If we are running inside the AI studio environment or local container on port 3000,
+  // we use standard relative paths as of the current origin.
+  if (host.includes("run.app") || host.includes("localhost:3000") || host.includes("127.0.0.1:3000")) {
+    return path;
+  }
+  // Otherwise, point to the active Cloud Run backend sandbox to enable central registrations across devices
+  return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
+}
+
 // Master API wrapper
 export const api = {
   // 1. Auth Login
   async login(username: string, password: string): Promise<{ token: string; user: any }> {
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(getApiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -122,7 +140,7 @@ export const api = {
   // 2. Fetch Stalls (Marketers)
   async getMarketers(): Promise<Marketer[]> {
     try {
-      const response = await fetch("/api/marketers");
+      const response = await fetch(getApiUrl("/api/marketers"));
       const { isHtml, text } = await isHtmlResponse(response);
       if (isHtml || !response.ok) {
         throw new Error("API failed");
@@ -145,7 +163,7 @@ export const api = {
     photo?: string;
   }): Promise<Marketer> {
     try {
-      const response = await fetch("/api/marketers", {
+      const response = await fetch(getApiUrl("/api/marketers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -193,7 +211,7 @@ export const api = {
   // 4. Update Verification Status
   async updateVerificationStatus(id: string, status: "verified" | "pending" | "review"): Promise<any> {
     try {
-      const response = await fetch(`/api/marketers/${id}/status`, {
+      const response = await fetch(getApiUrl(`/api/marketers/${id}/status`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
@@ -220,7 +238,7 @@ export const api = {
   // 5. Update Payment Amount (₦)
   async updatePayment(id: string, amountPaid: number): Promise<any> {
     try {
-      const response = await fetch(`/api/marketers/${id}/payment`, {
+      const response = await fetch(getApiUrl(`/api/marketers/${id}/payment`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amountPaid })
@@ -253,7 +271,7 @@ export const api = {
   // 6. Delete Stall
   async deleteMarketer(id: string): Promise<any> {
     try {
-      const response = await fetch(`/api/marketers/${id}`, {
+      const response = await fetch(getApiUrl(`/api/marketers/${id}`), {
         method: "DELETE"
       });
       const { isHtml, text } = await isHtmlResponse(response);
@@ -284,7 +302,7 @@ export const api = {
     photo?: string;
   }): Promise<Worker> {
     try {
-      const response = await fetch(`/api/marketers/${marketerId}/workers`, {
+      const response = await fetch(getApiUrl(`/api/marketers/${marketerId}/workers`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -327,7 +345,7 @@ export const api = {
   // 8. Delete Worker
   async deleteWorker(workerId: string): Promise<any> {
     try {
-      const response = await fetch(`/api/workers/${workerId}`, {
+      const response = await fetch(getApiUrl(`/api/workers/${workerId}`), {
         method: "DELETE"
       });
       const { isHtml, text } = await isHtmlResponse(response);
@@ -366,7 +384,7 @@ export const api = {
   // 9. Fetch Live Stats
   async getStats(localMarketers: Marketer[]): Promise<DashboardStats> {
     try {
-      const response = await fetch("/api/stats");
+      const response = await fetch(getApiUrl("/api/stats"));
       const { isHtml, text } = await isHtmlResponse(response);
       if (isHtml || !response.ok) {
         throw new Error("Stats API failed");
@@ -407,7 +425,7 @@ export const api = {
   // 10. Simulate Live Logs Action
   async simulateAction(): Promise<any> {
     try {
-      const response = await fetch("/api/simulate-action", {
+      const response = await fetch(getApiUrl("/api/simulate-action"), {
         method: "POST"
       });
       const { isHtml, text } = await isHtmlResponse(response);
@@ -445,7 +463,7 @@ export const api = {
   // Allows operators to upload custom JPEG cards / profiles directly
   async updatePhoto(entityId: string, photoBase64: string): Promise<any> {
     try {
-      const response = await fetch(`/api/photos/${entityId}`, {
+      const response = await fetch(getApiUrl(`/api/photos/${entityId}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photo: photoBase64 })
