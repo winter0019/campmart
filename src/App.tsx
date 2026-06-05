@@ -63,9 +63,22 @@ export default function App() {
     }
   };
 
+  const syncMarketersBackground = async () => {
+    try {
+      const data = await api.getMarketers();
+      setMarketers(data);
+    } catch (err) {
+      console.warn("Background auto-synchronization failed:", err);
+    }
+  };
+
   useEffect(() => {
     if (auth.token) {
       fetchMarketers();
+      // Auto-poll database updates every 15 seconds so registrations made on separate
+      // devices appear on the admin dashboard automatically in real-time
+      const interval = setInterval(syncMarketersBackground, 15000);
+      return () => clearInterval(interval);
     }
   }, [auth.token]);
 

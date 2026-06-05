@@ -2715,6 +2715,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
         </div>
       )}
 
+      {renderConfirmationSlipModals()}
     </div>
   );
 }
