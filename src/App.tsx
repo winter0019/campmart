@@ -7,7 +7,7 @@ import RegisterForm from "./components/RegisterForm";
 import IDCardGenerator from "./components/IDCardGenerator";
 import QRScanner from "./components/QRScanner";
 import { AuthState, Marketer } from "./types";
-import { Clock, RefreshCw, KeyRound, Signal, Server, Globe } from "lucide-react";
+import { Clock, RefreshCw, KeyRound, Signal, Server, Globe, Menu } from "lucide-react";
 import { api } from "./utils/api";
 
 export default function App() {
@@ -36,6 +36,7 @@ export default function App() {
     return "dashboard";
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Marketers master data states
@@ -103,31 +104,42 @@ export default function App() {
         setCollapsed={setSidebarCollapsed}
         user={auth.user}
         onLogout={handleLogout}
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
       />
 
       {/* Main View Block */}
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
         
         {/* Top Header Row Panel */}
-        <header className="h-16 border-b border-slate-800 bg-slate-900/40 backdrop-blur px-6 py-2.5 flex items-center justify-between shrink-0 z-20">
+        <header className="h-16 border-b border-slate-800 bg-slate-900/40 backdrop-blur px-4 sm:px-6 py-2.5 flex items-center justify-between shrink-0 z-20">
           
-          <div className="flex items-center gap-2.5">
-            <span className="hidden sm:inline-flex relative h-2 w-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mobile Hamburger toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-700 rounded-xl text-slate-400 hover:text-slate-200 transition-all cursor-pointer shrink-0"
+              title="Open Navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <span className="hidden sm:inline-flex relative h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-500 font-mono tracking-widest leading-none">TACTICAL STATUS</span>
-              <span className="text-[11px] font-bold text-slate-350 mt-1 uppercase font-mono tracking-wider flex items-center gap-1">
-                <Server className="w-3.5 h-3.5 text-emerald-450" />
-                Live Node Online (Port 3000)
+            <div className="flex flex-col min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono tracking-widest leading-none">TACTICAL STATUS</span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-350 mt-1 uppercase font-mono tracking-wider flex items-center gap-1 truncate">
+                <Server className="w-3.5 h-3.5 text-emerald-450 shrink-0" />
+                <span className="truncate">Live Node Online</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs text-slate-400">
+          <div className="flex items-center gap-3 sm:gap-6 text-xs text-slate-400 font-sans">
             {/* Live Clock displayed cleanly inside Mono typography */}
-            <div className="hidden md:flex items-center gap-2 font-mono text-[10.5px] bg-slate-950/60 border border-slate-850 px-3 py-1.5 rounded-xl">
+            <div className="hidden lg:flex items-center gap-2 font-mono text-[10.5px] bg-slate-950/60 border border-slate-850 px-3 py-1.5 rounded-xl">
               <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="text-slate-300">
                 {currentTime.toUTCString().replace("GMT", "UTC")}
@@ -137,7 +149,7 @@ export default function App() {
             <button
               onClick={fetchMarketers}
               disabled={loading}
-              className="p-2 hover:bg-slate-800 rounded-xl cursor-pointer text-slate-400 hover:text-emerald-450 transition-all flex items-center justify-center border border-slate-800/10 hover:border-slate-800"
+              className="p-2 hover:bg-slate-800 rounded-xl cursor-pointer text-slate-400 hover:text-emerald-450 transition-all flex items-center justify-center border border-slate-800/10 hover:border-slate-800 shrink-0"
               title="Sync dataset"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-emerald-400" : ""}`} />

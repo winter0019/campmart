@@ -292,7 +292,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 print:col-span-2">
                 
                 {/* 1. FRONT OF BADGE CARD */}
-                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300">
+                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
                   {/* Outer security stripe */}
                   <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
@@ -368,7 +368,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                 </div>
 
                 {/* 2. BACK OF BADGE CARD */}
-                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300">
+                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
                   {/* Decorative Magnetic Tape */}
                   <div className="h-10 bg-slate-950 shrink-0 mt-6 relative flex items-center px-6">

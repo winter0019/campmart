@@ -199,6 +199,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [printReceiptTarget, setPrintReceiptTarget] = useState<Marketer | null>(null);
+  const [printSlipTarget, setPrintSlipTarget] = useState<Marketer | null>(null);
 
   // Helper trigger to open marketer details with loaded payment context
   const selectMarketerWithPaymentInit = (marketer: Marketer | null) => {
@@ -244,6 +245,10 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
     setTimeout(() => {
       window.print();
     }, 150);
+  };
+
+  const handlePrintSlip = (marketer: Marketer) => {
+    setPrintSlipTarget(marketer);
   };
   
   // State to hold temporary data for window printing
@@ -519,11 +524,22 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
           </div>
           
-          <div className="shrink-0 bg-slate-950/60 border border-slate-850 p-3 rounded-2xl text-xs flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase tracking-wider text-slate-505 font-bold font-mono">STAND STATUS</span>
-              <span className="text-slate-300 font-semibold font-mono">active campaign station</span>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+            <button
+              onClick={() => handlePrintSlip(currentMarketer)}
+              className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-2xl text-xs cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10 shrink-0"
+              title="Print/Download Official Registration Confirmation Slip"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print Confirmation Slip</span>
+            </button>
+
+            <div className="shrink-0 bg-slate-950/60 border border-slate-850 p-3 rounded-2xl text-xs flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-slate-505 font-bold font-mono">STAND STATUS</span>
+                <span className="text-slate-300 font-semibold font-mono">active campaign station</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1150,6 +1166,16 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                   >
                     <Download className="w-4 h-4 text-teal-400" />
                     <span>Download ID</span>
+                  </button>
+
+                  {/* Print Confirmation Slip Button */}
+                  <button
+                    onClick={() => handlePrintSlip(selectedMarketer)}
+                    className="py-1.5 px-3 bg-slate-905 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5"
+                    title="Print Registration Confirmation Slip containing marketer details and staff people"
+                  >
+                    <Printer className="w-4 h-4 text-emerald-450" />
+                    <span>Print Confirmation Slip</span>
                   </button>
 
                   {userRole === "admin" && (
@@ -1852,6 +1878,394 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 ))}
               </div>
               <span className="block text-[6px] text-slate-400 mt-1 uppercase font-mono">EXHIBITOR PERMIT LOG AUDIT KEY</span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* On-screen Preview and Print Action Modal */}
+      {printSlipTarget && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 sticky top-0 z-10 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <Printer className="w-5 h-5 text-emerald-450" />
+                <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wider">Registration Slip Preview</h3>
+              </div>
+              <button
+                onClick={() => setPrintSlipTarget(null)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Preview Body */}
+            <div className="p-6 flex-1 overflow-y-auto bg-slate-950/40">
+              <div className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 font-sans shadow-lg max-w-full leading-relaxed mx-auto text-left">
+                {/* Top Bar Branding */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-slate-300 pb-4 mb-5 gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-305 flex items-center justify-center font-bold font-sans text-lg shrink-0">
+                      NYSC
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black tracking-tight uppercase leading-none text-slate-900">CAMP MARKET REGISTRATION</h2>
+                      <p className="text-[9px] text-slate-500 font-mono tracking-wide mt-1 uppercase">Katsina State Division • Official Exhibitor Bureau</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-left sm:text-right">
+                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-600 uppercase">
+                      CONFIRMATION SLIP
+                    </span>
+                    <p className="text-[8.5px] text-slate-500 font-mono mt-0.5">REF: CM-{printSlipTarget.id.substring(4).toUpperCase()}</p>
+                  </div>
+                </div>
+
+                {/* Main Details Panel */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+                  {/* Left Column - Marketer Profile Photo */}
+                  <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    {getPresetGradient(printSlipTarget.photo) ? (
+                      <div className={`w-24 h-24 rounded-xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-sm flex items-center justify-center font-bold text-slate-950 text-3xl uppercase border border-slate-300`}>
+                        {printSlipTarget.businessName.slice(0, 2)}
+                      </div>
+                    ) : (
+                      <img 
+                        src={printSlipTarget.photo} 
+                        alt={printSlipTarget.fullName} 
+                        className="w-24 h-24 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <div className="mt-2.5">
+                      <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-wider truncate max-w-[130px]">{printSlipTarget.fullName}</h3>
+                      <p className="text-[8px] text-slate-400 font-mono uppercase tracking-wider mt-0.5">Primary Registrant</p>
+                    </div>
+                  </div>
+
+                  {/* Right Columns - Info Fields */}
+                  <div className="sm:col-span-2 space-y-2.5 text-xs text-slate-700">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500 font-semibold font-sans text-[9px] uppercase tracking-wider">Business/Brand:</span>
+                      <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
+                    </div>
+                    
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500 font-semibold font-sans text-[9px] uppercase tracking-wider">Stand Code:</span>
+                      <span className="font-mono text-emerald-700 font-black text-[11px]">STAND {printSlipTarget.standNumber}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500 font-semibold font-sans text-[9px] uppercase tracking-wider">Category Segment:</span>
+                      <span className="font-bold text-slate-800">{printSlipTarget.category}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500 font-semibold font-sans text-[9px] uppercase tracking-wider">Cell Number:</span>
+                      <span className="font-mono text-slate-800 font-semibold">{printSlipTarget.phone}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-500 font-semibold font-sans text-[9px] uppercase tracking-wider">Audit Match:</span>
+                      <span className={`font-mono text-[9px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {printSlipTarget.verificationStatus === "verified" ? "★ APPROVED & SEALED" : "★ PENDING AUDIT"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="bg-slate-50 border border-slate-150 rounded-xl p-3 mb-5 text-[11px] text-slate-600 font-sans italic">
+                  "Description: {printSlipTarget.description}"
+                </div>
+
+                {/* Ledger */}
+                <div className="bg-emerald-50/20 border border-emerald-200 rounded-xl p-3 mb-5 text-slate-800 text-xs">
+                  <h3 className="text-[9px] font-black uppercase tracking-wider text-emerald-800 pb-1.5 border-b border-emerald-150 mb-2">FINANCIAL OVERVIEW</h3>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-white border border-emerald-105 p-2 rounded-lg">
+                      <span className="block text-[7.5px] font-mono text-slate-500 uppercase">Trade Base Due</span>
+                      <strong className="block text-slate-800 font-bold font-mono mt-0.5 text-[10px]">{formatNaira(getAmountDue(printSlipTarget.category))}</strong>
+                    </div>
+                    <div className="bg-white border border-emerald-105 p-2 rounded-lg">
+                      <span className="block text-[7.5px] font-mono text-slate-500 uppercase">Paid to Date</span>
+                      <strong className="block text-emerald-700 font-black font-mono mt-0.5 text-[10px]">{formatNaira(printSlipTarget.amountPaid || 0)}</strong>
+                    </div>
+                    <div className="bg-white border border-emerald-105 p-2 rounded-lg">
+                      <span className="block text-[7.5px] font-mono text-slate-500 uppercase">Balance</span>
+                      <strong className={`block font-black font-mono mt-0.5 text-[10px] ${getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0) <= 0 ? 'text-emerald-750' : 'text-rose-700'}`}>
+                        {getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0) <= 0 
+                          ? "Cleared" 
+                          : formatNaira(getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0))}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personnel Group */}
+                <div className="border-t border-slate-200 pt-4 mb-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800 font-sans">REGISTERED STAFF & WORKERS</h3>
+                    <span className="text-[8.5px] font-mono text-slate-500 font-bold bg-slate-100 border border-slate-205 px-2.5 py-0.5 rounded-lg shrink-0">
+                      {printSlipTarget.workers.length} Personnel
+                    </span>
+                  </div>
+
+                  {printSlipTarget.workers.length === 0 ? (
+                    <div className="py-4 text-center border border-dashed border-slate-205 rounded-xl text-slate-400 text-xs italic">
+                      No personnel or field representatives onboarded for this stand yet.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {printSlipTarget.workers.map((w) => (
+                        <div key={w.id} className="p-2.5 border border-slate-150 bg-slate-50 rounded-xl flex items-center gap-2.5 text-xs font-sans">
+                          {w.photo && !w.photo.startsWith("preset:") ? (
+                            <img 
+                              src={w.photo} 
+                              alt={w.fullName} 
+                              className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200 shadow-xs" 
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald")} shadow-xs flex items-center justify-center text-[10px] font-bold text-slate-950 shrink-0 border border-slate-200`}>
+                              {w.fullName.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-extrabold text-slate-900 truncate text-[10.5px] leading-none">{w.fullName}</h4>
+                            <p className="text-[8.5px] text-slate-500 leading-tight mt-0.5">Role: <strong className="text-slate-800">{w.role}</strong></p>
+                            <p className="text-[8.5px] text-slate-500 leading-tight font-mono truncate">{w.phone}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Signatures */}
+                <div className="mt-6 border-t border-slate-200 pt-4 flex justify-between items-end text-[9px] text-slate-500">
+                  <div className="text-center w-28">
+                    <div className="w-10 h-10 rounded-full border border-dashed border-emerald-600 text-emerald-600 flex flex-col items-center justify-center font-serif text-[6px] font-bold -rotate-12 mx-auto mb-1 select-none pointer-events-none uppercase">
+                      <span>OFFICIAL</span>
+                      <span>CONFIRMED</span>
+                    </div>
+                    <div className="border-t border-slate-300 pt-0.5 text-slate-400 font-sans uppercase font-bold text-[7.5px]">STAFF EXAMINER</div>
+                  </div>
+
+                  <div className="text-center w-28 text-right">
+                    <span className="block font-serif italic text-slate-444 select-none pb-2 pointer-events-none">NYSC Katsina</span>
+                    <div className="border-t border-slate-300 pt-0.5 text-slate-400 font-sans uppercase font-bold text-[7.5px] text-right">STAMP COMMISSIONER</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2.5 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Save PDF / Print Slip</span>
+              </button>
+              <button
+                onClick={() => setPrintSlipTarget(null)}
+                className="py-3 px-5 bg-slate-800 hover:bg-slate-755 border border-slate-705 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Official Registration Confirmation Slip Print Layout */}
+      {printSlipTarget && (
+        <div className="print-slip-only">
+          <div className="w-[720px] bg-white text-slate-900 p-8 rounded-3xl border-2 border-slate-300 font-sans relative shadow-2xl mx-auto my-6 leading-relaxed">
+            
+            {/* Top Bar Branding */}
+            <div className="flex items-center justify-between border-b-2 border-slate-400 pb-5 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-emerald-105 text-emerald-800 rounded-2xl border border-emerald-300 flex items-center justify-center font-bold font-sans text-xl shrink-0">
+                  NYSC
+                </div>
+                <div>
+                  <h2 className="text-base font-black tracking-tight uppercase leading-none text-slate-900">CAMP MARKET REGISTRATION</h2>
+                  <p className="text-[10px] text-slate-500 font-mono tracking-wide mt-1 uppercase select-none">Katsina State Division • Official Exhibitor Bureau</p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <span className="inline-flex py-1 px-2.5 bg-slate-100 border border-slate-300 rounded-xl text-[9px] font-mono font-bold tracking-wider text-slate-650 uppercase">
+                  CONFIRMATION SLIP
+                </span>
+                <p className="text-[9px] text-slate-500 font-mono mt-1">REF: CM-{printSlipTarget.id.substring(4).toUpperCase()}</p>
+              </div>
+            </div>
+
+            {/* Main Details Panel */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              
+              {/* Left Column - Marketer Profile Photo */}
+              <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
+                {getPresetGradient(printSlipTarget.photo) ? (
+                  <div className={`w-32 h-32 rounded-2xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-md flex items-center justify-center font-bold text-slate-950 text-4xl uppercase select-none border border-slate-300`}>
+                    {printSlipTarget.businessName.slice(0, 2)}
+                  </div>
+                ) : (
+                  <img 
+                    src={printSlipTarget.photo} 
+                    alt={printSlipTarget.fullName} 
+                    className="w-32 h-32 rounded-2xl object-cover shrink-0 border border-slate-300 shadow-sm animate-fade-in" 
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <div className="mt-3">
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">{printSlipTarget.fullName}</h3>
+                  <p className="text-[9px] text-slate-500 font-mono uppercase tracking-wider mt-0.5 select-none text-slate-400">Primary Registrant</p>
+                </div>
+              </div>
+
+              {/* Right Columns - Info Fields */}
+              <div className="md:col-span-2 space-y-3.5 text-xs text-slate-700">
+                <div className="flex justify-between py-1.5 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Registered Business/Brand:</span>
+                  <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
+                </div>
+                
+                <div className="flex justify-between py-1.5 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Designated Stand Assignment:</span>
+                  <span className="font-mono text-emerald-700 font-black text-[13px]">STAND {printSlipTarget.standNumber}</span>
+                </div>
+
+                <div className="flex justify-between py-1.5 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Industry Sector:</span>
+                  <span className="font-bold text-slate-800">{printSlipTarget.category}</span>
+                </div>
+
+                <div className="flex justify-between py-1.5 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Owner Direct Contact:</span>
+                  <span className="font-mono text-slate-800 font-semibold">{printSlipTarget.phone}</span>
+                </div>
+
+                <div className="flex justify-between py-1.5 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Registration Timestamp:</span>
+                  <span className="font-mono text-slate-800">{new Date(printSlipTarget.createdAt).toLocaleString()}</span>
+                </div>
+
+                <div className="flex justify-between py-1.5">
+                  <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Account Audit Status:</span>
+                  <span className={`font-mono text-[10.5px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    ★ {printSlipTarget.verificationStatus === "verified" ? "APPROVED & SEALED" : "PENDING AUDIT EXAMINATION"}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Description quote */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-xs text-slate-600 font-sans italic">
+              "Description: {printSlipTarget.description}"
+            </div>
+
+            {/* Financial Status Summary */}
+            <div className="bg-emerald-50/45 border border-emerald-200 rounded-2xl p-4.5 mb-6 text-xs">
+              <h3 className="text-[10px] font-black uppercase tracking-wider text-emerald-800 pb-2 border-b border-emerald-250 mb-3 select-none">FINANCIAL LEDGER STATS</h3>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-white border border-emerald-150 p-2.5 rounded-xl shadow-sm">
+                  <span className="block text-[8.5px] font-mono text-slate-500 uppercase">Trade Base Due</span>
+                  <strong className="block text-slate-800 font-bold font-mono mt-1">{formatNaira(getAmountDue(printSlipTarget.category))}</strong>
+                </div>
+                <div className="bg-white border border-emerald-150 p-2.5 rounded-xl shadow-sm">
+                  <span className="block text-[8.5px] font-mono text-slate-500 uppercase">Paid to Date</span>
+                  <strong className="block text-emerald-700 font-black font-mono mt-1">{formatNaira(printSlipTarget.amountPaid || 0)}</strong>
+                </div>
+                <div className="bg-white border border-emerald-150 p-2.5 rounded-xl shadow-sm">
+                  <span className="block text-[8.5px] font-mono text-slate-500 uppercase">Unpaid Balance</span>
+                  <strong className={`block font-black font-mono mt-1 ${getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0) <= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0) <= 0 
+                      ? "₦0 (Cleared)" 
+                      : formatNaira(getAmountDue(printSlipTarget.category) - (printSlipTarget.amountPaid || 0))}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Registered Operational Workers Segment */}
+            <div className="border-t border-slate-300 pt-5 mb-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+                <h3 className="text-[10.5px] font-black uppercase tracking-wider text-slate-800 font-sans">REGISTERED OPERATIONAL PROMOTERS & STAFF</h3>
+                <span className="text-[9.5px] font-mono text-slate-500 font-bold bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-xl shrink-0 select-none">
+                  {printSlipTarget.workers.length} Onboarded Personnel
+                </span>
+              </div>
+
+              {printSlipTarget.workers.length === 0 ? (
+                <div className="py-6 text-center border border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs italic">
+                  No operational personnel or field representatives onboarded for this stall yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {printSlipTarget.workers.map((w) => (
+                    <div key={w.id} className="p-3 border border-slate-200 bg-slate-50 rounded-2xl flex items-center gap-3 text-xs font-sans">
+                      {w.photo && !w.photo.startsWith("preset:") ? (
+                        <img 
+                          src={w.photo} 
+                          alt={w.fullName} 
+                          className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-300 shadow-xs" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald") || "from-teal-400 to-emerald-500"} shadow-xs flex items-center justify-center text-xs font-bold text-slate-950 shrink-0 border border-slate-300`}>
+                          {w.fullName.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-extrabold text-slate-900 truncate text-[11px] leading-tight">{w.fullName}</h4>
+                        <p className="text-[9px] text-slate-500 leading-tight mt-0.5 font-medium">Role: <strong className="text-slate-850">{w.role}</strong></p>
+                        <p className="text-[9px] text-slate-500 leading-tight font-mono">Cell: {w.phone}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Signature columns with high fidelity legal seal representations */}
+            <div className="mt-10 border-t border-slate-300 pt-6 flex justify-between items-end text-[10px] text-slate-700">
+              <div className="text-center w-36">
+                <div className="w-14 h-14 rounded-full border border-dashed border-emerald-600 text-emerald-600 flex flex-col items-center justify-center font-serif text-[7.5px] font-bold -rotate-12 mx-auto mb-2 select-none pointer-events-none uppercase">
+                  <span>OFFICIAL</span>
+                  <span>CONFIRMED</span>
+                </div>
+                <div className="border-t border-slate-450 pt-1 text-slate-500 font-sans uppercase font-bold text-[8.5px] select-none text-slate-400">STAFF EXAMINER</div>
+              </div>
+
+              <div className="text-center w-36">
+                <span className="block font-serif italic text-slate-350 select-none pb-4 pointer-events-none">NYSC State Coordinator</span>
+                <div className="border-t border-slate-450 pt-1 text-slate-500 font-sans uppercase font-bold text-[8.5px] select-none text-slate-400">STAMP COMMISSIONER</div>
+              </div>
+            </div>
+
+            {/* Disclaimer Barcode and Instructions */}
+            <div className="mt-10 border-t-2 border-slate-400 pt-4 text-center space-y-2">
+              <p className="text-[7.5px] text-slate-450 leading-normal font-sans">
+                Confirmation Notice: This slip acts as the official certification record proving stand validation and operational personnel clearance inside the NYSC Katsina Camp Market parameters. Present it to field inspection marshals on request. Use 'Save as PDF' option in your browser print system to download a file-backed variant.
+              </p>
+              <div className="flex justify-center gap-[1.5px] h-4 opacity-40 mt-1">
+                {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2,2,1,3,1,2].map((w, idx) => (
+                  <div key={idx} className="bg-slate-700" style={{ width: `${w}px` }} />
+                ))}
+              </div>
+              <span className="block text-[6px] text-slate-400 mt-1 uppercase font-mono select-none">TACTICAL VERIFICATION BARCODE KEY</span>
             </div>
 
           </div>
