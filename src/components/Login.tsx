@@ -436,7 +436,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. admin or Alice Vance"
+                    placeholder=""
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-600"
@@ -450,7 +450,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   </label>
                   <input
                     type="password"
-                    placeholder="e.g. admin or +1 (555) 012-3456"
+                    placeholder=""
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-600"
