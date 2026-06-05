@@ -11,7 +11,9 @@ import {
   Activity,
   Award,
   Sparkles,
-  QrCode
+  QrCode,
+  X,
+  Eye
 } from "lucide-react";
 import { Marketer, Worker } from "../types";
 import { downloadIDCard, downloadCombinedIDCard } from "../utils/cardUtils";
@@ -53,6 +55,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Compile a list of everyone who can receive a badge: Marketers and their Workers!
   const listAllEntities = () => {
@@ -137,11 +140,11 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
         
         {entities.length > 0 && (
           <button
-            onClick={handlePrint}
-            className="md:self-end py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+            onClick={() => setShowPrintPreview(true)}
+            className="md:self-end py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-lg hover:shadow-emerald-500/10"
           >
-            <Printer className="w-4 h-4 shrink-0" />
-            <span>Print Badge / Save PDF</span>
+            <Printer className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>Visualize & Print Badge</span>
           </button>
         )}
       </div>
@@ -224,6 +227,14 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                       >
                         <CreditCard className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                         <span>Download Combined Sheet (1 File)</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowPrintPreview(true)}
+                        className="w-full py-1.5 bg-slate-900 hover:bg-slate-850 text-emerald-450 hover:text-emerald-350 rounded-lg text-[10px] uppercase tracking-wider font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 border border-emerald-500/10"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Print Preview & Align</span>
                       </button>
                     </div>
                   </div>
@@ -499,7 +510,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                   <span className="text-slate-500 font-mono text-[9px] uppercase">Stand Assignment:</span>
                   <span className="font-mono font-bold text-emerald-400">{currentEntity.stand}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs border-b border-slate-900/60 pb-1.5">
+                <div className="flex items-center justify-between text-xs border-b border-slate-900/65 pb-1.5">
                   <span className="text-slate-500 font-mono text-[9px] uppercase">Trade Division:</span>
                   <span className="font-bold text-slate-205">{currentEntity.category}</span>
                 </div>
@@ -530,6 +541,289 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
         </div>
       )}
 
+      {/* Modern Badge Print Preview Modal to visualize before printing */}
+      {showPrintPreview && currentEntity && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 sticky top-0 z-10 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <Printer className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-sm text-slate-100 uppercase tracking-wider">Badge Print Preview</h3>
+              </div>
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Preview Body */}
+            <div className="p-6 flex-1 overflow-y-auto bg-slate-950/40">
+              <p className="text-xs text-slate-400 mb-6 text-center">
+                This indicates exactly how the ID Card badges will be structured and aligned on front/back sides during printing.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center justify-center max-w-2xl mx-auto">
+                {/* 1. FRONT BADGE CARD PREVIEW */}
+                <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-2xl mx-auto">
+                  {/* Emerald glow top banner strip */}
+                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+                  
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mt-1.5">
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">NYSC KATSINA CAMP</span>
+                    <span className="text-[8px] font-bold font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-3 text-center my-auto">
+                    {/* Photo */}
+                    {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                      <div className="relative">
+                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 blur-sm" />
+                        <img 
+                          src={currentEntity.photo} 
+                          alt={currentEntity.name} 
+                          className="w-24 h-24 rounded-2xl object-cover relative border border-slate-950 z-10" 
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-100 blur-sm" />
+                        <div className={`w-24 h-24 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
+                          {currentEntity.name.slice(0, 2)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-extrabold uppercase tracking-tight text-slate-50">
+                        {currentEntity.name.toUpperCase()}
+                      </h4>
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-805 text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {currentEntity.role}
+                      </div>
+                      <p className="text-[9.5px] text-slate-500 font-medium tracking-tight">Merchant: {currentEntity.business}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs text-slate-400">
+                    <div>
+                      <span className="block text-[7px] uppercase tracking-wider text-slate-500 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
+                      <strong className="text-slate-100 uppercase text-[10px] font-extrabold">Stand {currentEntity.stand}</strong>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-[7px] uppercase tracking-wider text-slate-500 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
+                      <strong className="font-mono text-emerald-450 text-[10.5px] font-extrabold">{currentEntity.id}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. BACK BADGE CARD PREVIEW */}
+                <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-2xl mx-auto">
+                  {/* Magnetic strip mock */}
+                  <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
+                    <span className="text-[6px] font-mono text-slate-600 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-between mt-12">
+                    {/* Disclaimer */}
+                    <div className="space-y-2 text-[7.5px] text-slate-550 leading-relaxed border-b border-slate-800/60 pb-3">
+                      <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
+                      <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
+                      <div className="flex justify-between font-mono text-[6.5px] text-slate-600 pt-1">
+                        <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
+                        <span>REF: CP-Z1</span>
+                      </div>
+                    </div>
+
+                    {/* Signature and barcode items */}
+                    <div className="flex items-center justify-between gap-4 py-2 mt-auto">
+                      <div className="p-1 bg-white rounded-lg border border-slate-200 w-10 h-10 flex items-center justify-center shrink-0">
+                        <div className="grid grid-cols-4 gap-0.5 w-full h-full p-0.5">
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-transparent" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-transparent" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-transparent" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-transparent" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-transparent" />
+                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-xs" />
+                        </div>
+                      </div>
+
+                      <div className="text-right flex-1">
+                        <span className="block text-[7px] text-slate-600 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
+                        <span className="text-slate-300 font-serif italic tracking-widest text-[10px] block mt-1">Idris Dangalan</span>
+                        <div className="w-14 h-[1px] bg-slate-800 ml-auto mt-0.5" />
+                        <span className="text-[7px] text-slate-500 uppercase block mt-0.5 leading-none">Signature Verified</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="py-2 mt-auto border-t border-slate-800/80 text-center flex flex-col items-center">
+                    <span className="text-[6px] text-emerald-400 font-extrabold tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
+                    <div className="flex gap-[1px] h-3 mt-1.5 opacity-50">
+                      {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2].map((w, idx) => (
+                        <div key={idx} className="bg-slate-500" style={{ width: `${w}px` }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2.5 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="flex-[1.5] py-3 bg-emerald-500 hover:bg-emerald-450 text-slate-950 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Trigger Printer Dialog / Save PDF</span>
+              </button>
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="py-3 px-5 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-205 rounded-xl text-xs font-semibold cursor-pointer transition-colors border border-slate-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High Definition Actual Print Specimen rendered dynamically behind other elements */}
+      {currentEntity && (
+        <div className="print-only">
+          {/* Card Front view layout */}
+          <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-2xl mx-auto">
+            {/* Emerald glow top banner strip */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+            
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mt-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">NYSC KATSINA CAMP</span>
+              <span className="text-[9px] font-bold font-mono text-emerald-450 bg-emerald-950/80 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
+            </div>
+
+            <div className="flex flex-col items-center gap-4 text-center my-auto">
+              {/* Photo */}
+              {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                <div className="relative">
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 blur-sm" />
+                  <img 
+                    src={currentEntity.photo} 
+                    alt={currentEntity.name} 
+                    className="w-[105px] h-[105px] rounded-2xl object-cover relative border border-slate-950 z-10" 
+                  />
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-100 blur-sm" />
+                  <div className={`w-[105px] h-[105px] rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-3xl uppercase`}>
+                    {currentEntity.name.slice(0, 2)}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <h4 className="text-base font-extrabold uppercase tracking-tight text-slate-50">
+                  {currentEntity.name.toUpperCase()}
+                </h4>
+                <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-805 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {currentEntity.role}
+                </div>
+                <p className="text-[10.5px] text-slate-500 font-medium tracking-tight">Merchant: {currentEntity.business}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs text-slate-400">
+              <div>
+                <span className="block text-[7.5px] uppercase tracking-wider text-slate-505 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
+                <strong className="text-slate-100 uppercase text-[12px] font-extrabold">Stand {currentEntity.stand}</strong>
+              </div>
+              <div className="text-right">
+                <span className="block text-[7.5px] uppercase tracking-wider text-slate-505 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
+                <strong className="font-mono text-emerald-450 text-[12.5px] font-extrabold">{currentEntity.id}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Card Back view layout */}
+          <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-2xl mx-auto">
+            {/* Magnetic strip mock */}
+            <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
+              <span className="text-[6.5px] font-mono text-slate-650 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-between mt-18">
+              {/* Disclaimer */}
+              <div className="space-y-2 text-[8px] text-slate-500 leading-relaxed border-b border-slate-800/60 pb-3">
+                <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
+                <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
+                <div className="flex justify-between font-mono text-[7px] text-slate-600 pt-1">
+                  <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
+                  <span>REF: CP-Z1</span>
+                </div>
+              </div>
+
+              {/* Signature and barcode items */}
+              <div className="flex items-center justify-between gap-4 py-2 mt-auto">
+                <div className="p-1 bg-white rounded-lg border border-slate-200 w-12 h-12 flex items-center justify-center shrink-0">
+                  <div className="grid grid-cols-4 gap-0.5 w-full h-full p-0.5">
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-transparent" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-transparent" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-transparent" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-transparent" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-transparent" />
+                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-xs" />
+                  </div>
+                </div>
+
+                <div className="text-right flex-1">
+                  <span className="block text-[7.5px] text-slate-605 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
+                  <span className="text-slate-300 font-serif italic tracking-widest text-[12px] block mt-1">Idris Dangalan</span>
+                  <div className="w-18 h-[1px] bg-slate-800 ml-auto mt-0.5" />
+                  <span className="text-[7.5px] text-slate-550 uppercase block mt-0.5 leading-none">Signature Verified</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="py-2 mt-auto border-t border-slate-800/80 text-center flex flex-col items-center">
+              <span className="text-[7px] text-emerald-400 font-extrabold tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
+              <div className="flex gap-[1.5px] h-4 mt-2 opacity-50">
+                {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2,2,1,3,1,2].map((w, idx) => (
+                  <div key={idx} className="bg-slate-500" style={{ width: `${w}px` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
