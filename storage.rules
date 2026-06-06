@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        firestore.exists(
+          /databases/(default)/documents/admins/$(request.auth.uid)
+        );
+    }
+
+    // Gallery images for vendor, stall, and worker profile photographs
+    match /gallery/{imageId} {
+      // Anyone can view photos to print and verify ID cards
+      allow read: if true;
+
+      // Allow write if Admin OR if it is a high-integrity profile/stall photo registration upload
+      allow write: if (
+        isAdmin() || (
+          // Free upload for registrations, limited to 5MB in size and validated as an image mime
+          request.resource.size < 5 * 1024 * 1024 
+          && request.resource.contentType.matches('image/.*')
+        )
+      );
+    }
+  }
+}

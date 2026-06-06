@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Worker": {
+      "title": "Worker",
+      "description": "Information about a stall staff or worker under a marketer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string" },
+        "marketerId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "photo": { "type": "string" }
+      },
+      "required": ["id", "fullName", "phone", "role", "marketerId", "createdAt"]
+    },
+    "Marketer": {
+      "title": "Marketer",
+      "description": "Represents a NYSC camp market stand/stalls registration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "businessName": { "type": "string" },
+        "phone": { "type": "string" },
+        "standNumber": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "photo": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "workers": {
+          "type": "array",
+          "items": { "type": "object", "$ref": "#/entities/Worker" }
+        },
+        "verificationStatus": { "type": "string", "enum": ["verified", "pending", "review"] },
+        "amountPaid": { "type": "number" }
+      },
+      "required": ["id", "fullName", "businessName", "phone", "standNumber", "category", "createdAt"]
+    },
+    "LiveActivity": {
+      "title": "LiveActivity",
+      "description": "Audit trails and log activities in the camp market",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "type", "timestamp", "message"]
+    }
+  },
+  "firestore": {
+    "/marketers/{marketerId}": {
+      "schema": "Marketer",
+      "description": "Collection of NYSC market vendors/stalls"
+    },
+    "/activities/{activityId}": {
+      "schema": "LiveActivity",
+      "description": "Real-time activity audit log"
+    }
+  }
+}

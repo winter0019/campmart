@@ -1,4 +1,35 @@
 import { Marketer, Worker, LiveActivity, DashboardStats } from "../types";
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  setDoc, 
+  deleteDoc, 
+  query, 
+  orderBy, 
+  limit 
+} from "firebase/firestore";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../firebase";
+
+// Helper function to upload photos to Firebase Storage if they are base64
+async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | undefined): Promise<string | undefined> {
+  if (!photo) return photo;
+  if (photo.startsWith("data:image")) {
+    try {
+      const storageRef = ref(storage, `gallery/${entityId}`);
+      await uploadString(storageRef, photo, "data_url");
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(`Successfully uploaded photo to storage for ${entityId}: ${downloadURL}`);
+      return downloadURL;
+    } catch (err) {
+      console.error("Failed to upload photo to Firebase Storage, using base64 fallback:", err);
+      return photo;
+    }
+  }
+  return photo;
+}
 
 // In-Memory or LocalStorage-backed fallback database for Netlify / Static hosting environments.
 const LOCAL_DB_KEY = "campmark_fallback_db";
@@ -71,16 +102,53 @@ function getApiUrl(path: string): string {
   }
 
   const host = window.location.host;
-  // If we are running inside the AI studio environment or local container on port 3000,
-  // we use standard relative paths as of the current origin.
   if (host.includes("run.app") || host.includes("localhost:3000") || host.includes("127.0.0.1:3000")) {
     return path;
   }
-  // Otherwise, point to the active Cloud Run backend sandbox to enable central registrations across devices
   return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
 }
 
-// Master API wrapper
+// --- Firestore Hardened Error Handling ---
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: null,
+      email: null,
+      emailVerified: null,
+      isAnonymous: null,
+      tenantId: null
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// Master API wrapper with Firestore priority
 export const api = {
   // 1. Auth Login
   async login(username: string, password: string): Promise<{ token: string; user: any }> {
@@ -102,8 +170,7 @@ export const api = {
 
       return JSON.parse(text);
     } catch (e: any) {
-      // Unconditionally use local fallback logic on any connection, CORS, or 404 server error
-      console.warn("Running in Static Fallback Mode (Netlify or CORS redirection detected)", e);
+      console.warn("Running in Static Fallback Mode for Auth", e);
       
       const usernameLower = username.toLowerCase();
       
@@ -121,13 +188,27 @@ export const api = {
         };
       }
 
-      // Check if username/password matches local marketer
-      const db = loadLocalDB();
-      const found = db.marketers.find(m => m.fullName.toLowerCase() === usernameLower || m.businessName.toLowerCase() === usernameLower);
-      if (found && (password === found.phone || password === "password")) {
+      // Check if username/password matches local or Firestore marketer
+      try {
+        const marketers = await this.getMarketers();
+        const found = marketers.find(m => m.fullName.toLowerCase() === usernameLower || m.businessName.toLowerCase() === usernameLower);
+        if (found && (password === found.phone || password === "password")) {
+          return {
+            token: `local-jwt-token-${found.id}`,
+            user: { id: found.id, username: found.fullName, fullName: found.fullName, role: "marketer" }
+          };
+        }
+      } catch (err) {
+        console.error("Auth check against database failed", err);
+      }
+
+      // Local storage fallback
+      const dbLocal = loadLocalDB();
+      const foundLocal = dbLocal.marketers.find(m => m.fullName.toLowerCase() === usernameLower || m.businessName.toLowerCase() === usernameLower);
+      if (foundLocal && (password === foundLocal.phone || password === "password")) {
         return {
-          token: `local-jwt-token-${found.id}`,
-          user: { id: found.id, username: found.fullName, fullName: found.fullName, role: "marketer" }
+          token: `local-jwt-token-${foundLocal.id}`,
+          user: { id: foundLocal.id, username: foundLocal.fullName, fullName: foundLocal.fullName, role: "marketer" }
         };
       }
       throw new Error("Invalid master credentials.");
@@ -137,14 +218,33 @@ export const api = {
   // 2. Fetch Stalls (Marketers)
   async getMarketers(): Promise<Marketer[]> {
     try {
-      const response = await fetch(getApiUrl("/api/marketers"));
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("API failed");
-      }
-      return JSON.parse(text);
+      // Prioritize Firestore live connection
+      const marketersRef = collection(db, "marketers");
+      const q = query(marketersRef);
+      const querySnapshot = await getDocs(q);
+      const marketersList = querySnapshot.docs.map(docSnap => docSnap.data() as Marketer);
+      
+      // Keep local DB cached in sync
+      const localDB = loadLocalDB();
+      localDB.marketers = marketersList;
+      saveLocalDB(localDB);
+
+      return marketersList;
     } catch (e) {
-      console.warn("Falling back to local marketers data");
+      console.warn("Falling back to local marketers cached cache data", e);
+      try {
+        const response = await fetch(getApiUrl("/api/marketers"));
+        const { isHtml, text } = await isHtmlResponse(response);
+        if (!isHtml && response.ok) {
+          const fetchedMarketers = JSON.parse(text);
+          const localDB = loadLocalDB();
+          localDB.marketers = fetchedMarketers;
+          saveLocalDB(localDB);
+          return fetchedMarketers;
+        }
+      } catch (apiErr) {
+        console.warn("Proxy and Firestore failed. Loading from localStorage.", apiErr);
+      }
       return loadLocalDB().marketers;
     }
   },
@@ -159,136 +259,194 @@ export const api = {
     description?: string;
     photo?: string;
   }): Promise<Marketer> {
+    const id = `mkt-${Date.now()}`;
+    const uploadedPhoto = await uploadPhotoStorageIfNeeded(id, payload.photo);
+
+    const newMarketer: Marketer = {
+      id,
+      fullName: payload.fullName,
+      businessName: payload.businessName,
+      phone: payload.phone,
+      standNumber: payload.standNumber,
+      category: payload.category,
+      description: payload.description || "No description provided.",
+      photo: uploadedPhoto,
+      createdAt: new Date().toISOString(),
+      workers: [],
+      verificationStatus: "pending",
+      amountPaid: 0
+    };
+
+    // Try committing to Firestore first
     try {
-      const response = await fetch(getApiUrl("/api/marketers"), {
+      const docRef = doc(db, "marketers", newMarketer.id);
+      await setDoc(docRef, newMarketer);
+
+      // Log success activity to Firestore
+      const newActivity: LiveActivity = {
+        id: `act-${Date.now()}`,
+        type: "marketer_registered",
+        timestamp: new Date().toISOString(),
+        message: `Registered new campaign marketer: ${payload.businessName}`,
+        details: `Managed by ${payload.fullName} at Stand ${payload.standNumber}.`
+      };
+      await setDoc(doc(db, "activities", newActivity.id), newActivity);
+    } catch (e: any) {
+      console.warn("Failed to write marketer to Firestore. Using fallback static local registry.", e);
+      // Fallback local persistence
+      const dbLocal = loadLocalDB();
+      const duplicate = dbLocal.marketers.find(m => m.standNumber.trim() === payload.standNumber.trim());
+      if (duplicate) {
+        throw new Error(`Stand number is already occupied by ${duplicate.businessName}. Please choose another stand.`);
+      }
+      dbLocal.marketers.push(newMarketer);
+      logLocalActivity(dbLocal, "marketer_registered", `Registered new campaign marketer: ${payload.businessName}`, `Managed by ${payload.fullName} at Stand ${payload.standNumber}.`);
+      saveLocalDB(dbLocal);
+    }
+
+    try {
+      // Attempt backend endpoint trigger if available
+      await fetch(getApiUrl("/api/marketers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        if (isHtml) throw new Error("HTML_RESPONSE");
-        const errData = JSON.parse(text || "{}");
-        throw new Error(errData.error || "Failed to commit registration.");
-      }
-      return JSON.parse(text);
-    } catch (e: any) {
-      if (e.message !== "HTML_RESPONSE" && !e.message.includes("API failed") && !e.message.includes("Failed to fetch") && !e.message.includes("Load failed")) {
-        throw e;
-      }
-      // Local fallback
-      const db = loadLocalDB();
-      const duplicate = db.marketers.find(m => m.standNumber.trim() === payload.standNumber.trim());
-      if (duplicate) {
-        throw new Error(`Stand number is already occupied by ${duplicate.businessName}. Please choose another stand.`);
-      }
-
-      const newMarketer: Marketer = {
-        id: `mkt-${Date.now()}`,
-        fullName: payload.fullName,
-        businessName: payload.businessName,
-        phone: payload.phone,
-        standNumber: payload.standNumber,
-        category: payload.category,
-        description: payload.description || "No description provided.",
-        photo: payload.photo,
-        createdAt: new Date().toISOString(),
-        workers: [],
-        verificationStatus: "pending",
-        amountPaid: 0
-      };
-
-      db.marketers.push(newMarketer);
-      logLocalActivity(db, "marketer_registered", `Registered new campaign marketer: ${payload.businessName}`, `Managed by ${payload.fullName} at Stand ${payload.standNumber}.`);
-      saveLocalDB(db);
-      return newMarketer;
+    } catch (err) {
+      // Graceful ignore
     }
+
+    return newMarketer;
   },
 
   // 4. Update Verification Status
   async updateVerificationStatus(id: string, status: "verified" | "pending" | "review"): Promise<any> {
     try {
-      const response = await fetch(getApiUrl(`/api/marketers/${id}/status`), {
+      const docRef = doc(db, "marketers", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Marketer;
+        await setDoc(docRef, { ...data, verificationStatus: status });
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "marketer_registered",
+          timestamp: new Date().toISOString(),
+          message: `Status altered for ${data.businessName}`,
+          details: `Seeded verification status state to ${status.toUpperCase()}.`
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      }
+    } catch (e: any) {
+      console.warn("Firestore status update failed, writing local cache", e);
+    }
+
+    try {
+      await fetch(getApiUrl(`/api/marketers/${id}/status`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Status API failed");
-      }
-      return JSON.parse(text);
-    } catch (e) {
-      // Local fallback
-      const db = loadLocalDB();
-      const index = db.marketers.findIndex(m => m.id === id);
-      if (index !== -1) {
-        db.marketers[index].verificationStatus = status;
-        logLocalActivity(db, "marketer_registered", `Status altered for ${db.marketers[index].businessName}`, `Seeded verification status state to ${status.toUpperCase()}.`);
-        saveLocalDB(db);
-        return { success: true, verificationStatus: status };
-      }
-      throw new Error("Marketer not found in database.");
+    } catch (err) {
+      // Graceful
     }
+
+    // Always update local storage
+    const dbLocal = loadLocalDB();
+    const index = dbLocal.marketers.findIndex(m => m.id === id);
+    if (index !== -1) {
+      dbLocal.marketers[index].verificationStatus = status;
+      logLocalActivity(dbLocal, "marketer_registered", `Status altered for ${dbLocal.marketers[index].businessName}`, `Seeded verification status state to ${status.toUpperCase()}.`);
+      saveLocalDB(dbLocal);
+      return { success: true, verificationStatus: status };
+    }
+    return { success: true, verificationStatus: status };
   },
 
   // 5. Update Payment Amount (₦)
   async updatePayment(id: string, amountPaid: number): Promise<any> {
     try {
-      const response = await fetch(getApiUrl(`/api/marketers/${id}/payment`), {
+      const docRef = doc(db, "marketers", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Marketer;
+        const oldPaid = data.amountPaid || 0;
+        await setDoc(docRef, { ...data, amountPaid });
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "marketer_registered",
+          timestamp: new Date().toISOString(),
+          message: `Payment updated for ${data.businessName}`,
+          details: `Changed amount paid from ₦${oldPaid.toLocaleString()} to ₦${amountPaid.toLocaleString()}.`
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      }
+    } catch (e: any) {
+      console.warn("Firestore payment update failed", e);
+    }
+
+    try {
+      await fetch(getApiUrl(`/api/marketers/${id}/payment`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amountPaid })
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        if (isHtml) throw new Error("HTML_RESPONSE");
-        const errData = JSON.parse(text || "{}");
-        throw new Error(errData.error || "Payment update failed.");
-      }
-      return JSON.parse(text);
-    } catch (e: any) {
-      if (e.message !== "HTML_RESPONSE" && !e.message.includes("API failed") && !e.message.includes("Failed to fetch") && !e.message.includes("Load failed")) {
-        throw e;
-      }
-      // Local fallback
-      const db = loadLocalDB();
-      const index = db.marketers.findIndex(m => m.id === id);
-      if (index !== -1) {
-        const oldPaid = db.marketers[index].amountPaid || 0;
-        db.marketers[index].amountPaid = amountPaid;
-        logLocalActivity(db, "marketer_registered", `Payment updated for ${db.marketers[index].businessName}`, `Changed amount paid from ₦${oldPaid.toLocaleString()} to ₦${amountPaid.toLocaleString()}.`);
-        saveLocalDB(db);
-        return { success: true, amountPaid };
-      }
-      throw new Error("Marketer not found in database.");
+    } catch (err) {
+      // Graceful
     }
+
+    const dbLocal = loadLocalDB();
+    const index = dbLocal.marketers.findIndex(m => m.id === id);
+    if (index !== -1) {
+      const oldPaid = dbLocal.marketers[index].amountPaid || 0;
+      dbLocal.marketers[index].amountPaid = amountPaid;
+      logLocalActivity(dbLocal, "marketer_registered", `Payment updated for ${dbLocal.marketers[index].businessName}`, `Changed amount paid from ₦${oldPaid.toLocaleString()} to ₦${amountPaid.toLocaleString()}.`);
+      saveLocalDB(dbLocal);
+      return { success: true, amountPaid };
+    }
+    return { success: true, amountPaid };
   },
 
   // 6. Delete Stall
   async deleteMarketer(id: string): Promise<any> {
     try {
-      const response = await fetch(getApiUrl(`/api/marketers/${id}`), {
+      const docRef = doc(db, "marketers", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Marketer;
+        await deleteDoc(docRef);
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "marketer_deleted",
+          timestamp: new Date().toISOString(),
+          message: `Removed campaign marketer: ${data.businessName}`,
+          details: "All associated workers also unregistered."
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      }
+    } catch (e: any) {
+      console.warn("Firestore marketer deletion failed", e);
+    }
+
+    try {
+      await fetch(getApiUrl(`/api/marketers/${id}`), {
         method: "DELETE"
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Delete API failed");
-      }
-      return JSON.parse(text);
-    } catch (e) {
-      // Local fallback
-      const db = loadLocalDB();
-      const index = db.marketers.findIndex(m => m.id === id);
-      if (index !== -1) {
-        const name = db.marketers[index].businessName;
-        db.marketers.splice(index, 1);
-        logLocalActivity(db, "marketer_deleted", `Removed campaign marketer: ${name}`, "All associated workers also unregistered.");
-        saveLocalDB(db);
-        return { success: true };
-      }
-      throw new Error("Marketer not found in database.");
+    } catch (err) {
+      // Graceful
     }
+
+    const dbLocal = loadLocalDB();
+    const index = dbLocal.marketers.findIndex(m => m.id === id);
+    if (index !== -1) {
+      const name = dbLocal.marketers[index].businessName;
+      dbLocal.marketers.splice(index, 1);
+      logLocalActivity(dbLocal, "marketer_deleted", `Removed campaign marketer: ${name}`, "All associated workers also unregistered.");
+      saveLocalDB(dbLocal);
+      return { success: true };
+    }
+    throw new Error("Marketer not found in local tracking cache.");
   },
 
   // 7. Add Worker
@@ -298,99 +456,161 @@ export const api = {
     role: string;
     photo?: string;
   }): Promise<Worker> {
+    const id = `wrk-${Date.now()}`;
+    const uploadedPhoto = await uploadPhotoStorageIfNeeded(id, payload.photo);
+
+    const newWorker: Worker = {
+      id,
+      fullName: payload.fullName,
+      phone: payload.phone,
+      role: payload.role,
+      marketerId,
+      photo: uploadedPhoto,
+      createdAt: new Date().toISOString()
+    };
+
     try {
-      const response = await fetch(getApiUrl(`/api/marketers/${marketerId}/workers`), {
+      const docRef = doc(db, "marketers", marketerId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Marketer;
+        const workers = data.workers || [];
+        workers.push(newWorker);
+        await setDoc(docRef, { ...data, workers });
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "worker_added",
+          timestamp: new Date().toISOString(),
+          message: `Added worker: ${payload.fullName} under ${data.businessName}`,
+          details: `Assigned role: ${payload.role}.`
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      }
+    } catch (e: any) {
+      console.warn("Firestore addWorker failed", e);
+    }
+
+    try {
+      await fetch(getApiUrl(`/api/marketers/${marketerId}/workers`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        if (isHtml) throw new Error("HTML_RESPONSE");
-        const errData = JSON.parse(text || "{}");
-        throw new Error(errData.error || "Worker add failed.");
-      }
-      return JSON.parse(text);
-    } catch (e: any) {
-      if (e.message !== "HTML_RESPONSE" && !e.message.includes("API failed") && !e.message.includes("Failed to fetch") && !e.message.includes("Load failed")) {
-        throw e;
-      }
-      // Local fallback
-      const db = loadLocalDB();
-      const marketerIndex = db.marketers.findIndex(m => m.id === marketerId);
-      if (marketerIndex === -1) {
-        throw new Error("Associated marketer stand not found.");
-      }
+    } catch (err) {
+      // Graceful
+    }
 
-      const newWorker: Worker = {
-        id: `wrk-${Date.now()}`,
-        fullName: payload.fullName,
-        phone: payload.phone,
-        role: payload.role,
-        marketerId,
-        photo: payload.photo,
-        createdAt: new Date().toISOString()
-      };
-
-      db.marketers[marketerIndex].workers.push(newWorker);
-      logLocalActivity(db, "worker_added", `Added worker: ${payload.fullName} under ${db.marketers[marketerIndex].businessName}`, `Assigned role: ${payload.role}.`);
-      saveLocalDB(db);
+    const dbLocal = loadLocalDB();
+    const marketerIndex = dbLocal.marketers.findIndex(m => m.id === marketerId);
+    if (marketerIndex !== -1) {
+      dbLocal.marketers[marketerIndex].workers.push(newWorker);
+      logLocalActivity(dbLocal, "worker_added", `Added worker: ${payload.fullName} under ${dbLocal.marketers[marketerIndex].businessName}`, `Assigned role: ${payload.role}.`);
+      saveLocalDB(dbLocal);
       return newWorker;
     }
+    return newWorker;
   },
 
   // 8. Delete Worker
   async deleteWorker(workerId: string): Promise<any> {
     try {
-      const response = await fetch(getApiUrl(`/api/workers/${workerId}`), {
+      // Find the marketer that owns this worker in Firestore
+      const querySnapshot = await getDocs(collection(db, "marketers"));
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data() as Marketer;
+        const workers = data.workers || [];
+        const index = workers.findIndex(w => w.id === workerId);
+        if (index !== -1) {
+          const workerName = workers[index].fullName;
+          workers.splice(index, 1);
+          await setDoc(doc(db, "marketers", data.id), { ...data, workers });
+
+          const newActivity: LiveActivity = {
+            id: `act-${Date.now()}`,
+            type: "worker_removed",
+            timestamp: new Date().toISOString(),
+            message: `Removed worker: ${workerName}`,
+            details: `Worker dismissed from ${data.businessName}.`
+          };
+          await setDoc(doc(db, "activities", newActivity.id), newActivity);
+          break;
+        }
+      }
+    } catch (e: any) {
+      console.warn("Firestore deleteWorker failed", e);
+    }
+
+    try {
+      await fetch(getApiUrl(`/api/workers/${workerId}`), {
         method: "DELETE"
       });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Worker delete API failed");
-      }
-      return JSON.parse(text);
-    } catch (e) {
-      // Local fallback
-      const db = loadLocalDB();
-      let found = false;
-      let workerName = "";
-      let business = "";
-
-      db.marketers = db.marketers.map(m => {
-        const workerIndex = m.workers.findIndex(w => w.id === workerId);
-        if (workerIndex !== -1) {
-          workerName = m.workers[workerIndex].fullName;
-          business = m.businessName;
-          m.workers.splice(workerIndex, 1);
-          found = true;
-        }
-        return m;
-      });
-
-      if (!found) {
-        throw new Error("Worker not found under local storage.");
-      }
-
-      logLocalActivity(db, "worker_removed", `Removed worker: ${workerName}`, `Worker dismissed from ${business}.`);
-      saveLocalDB(db);
-      return { success: true };
+    } catch (err) {
+      // Graceful
     }
+
+    const dbLocal = loadLocalDB();
+    let foundLocal = false;
+    let workerNameLocal = "";
+    let businessLocal = "";
+
+    dbLocal.marketers = dbLocal.marketers.map(m => {
+      const workerIndex = m.workers.findIndex(w => w.id === workerId);
+      if (workerIndex !== -1) {
+        workerNameLocal = m.workers[workerIndex].fullName;
+        businessLocal = m.businessName;
+        m.workers.splice(workerIndex, 1);
+        foundLocal = true;
+      }
+      return m;
+    });
+
+    if (foundLocal) {
+      logLocalActivity(dbLocal, "worker_removed", `Removed worker: ${workerNameLocal}`, `Worker dismissed from ${businessLocal}.`);
+      saveLocalDB(dbLocal);
+    }
+    return { success: true };
   },
 
   // 9. Fetch Live Stats
   async getStats(localMarketers: Marketer[]): Promise<DashboardStats> {
     try {
-      const response = await fetch(getApiUrl("/api/stats"));
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Stats API failed");
-      }
-      return JSON.parse(text);
+      const currentMarketers = await this.getMarketers();
+      
+      // Fetch recent status logs from Firestore
+      const activitiesRef = collection(db, "activities");
+      const q = query(activitiesRef, orderBy("timestamp", "desc"), limit(20));
+      const snapshot = await getDocs(q);
+      const recentActivities = snapshot.docs.map(docSnap => docSnap.data() as LiveActivity);
+
+      let totalWorkers = 0;
+      let totalRevenue = 0;
+      const categories: { [key: string]: number } = {};
+
+      currentMarketers.forEach(m => {
+        totalWorkers += (m.workers || []).length;
+        if (m.category) {
+          categories[m.category] = (categories[m.category] || 0) + 1;
+        }
+        totalRevenue += (m.amountPaid || 0);
+      });
+
+      const categoryDist = Object.keys(categories).map(k => ({
+        name: k,
+        value: categories[k]
+      }));
+
+      return {
+        totalMarketers: currentMarketers.length,
+        totalWorkers,
+        activeStands: currentMarketers.length,
+        categoryDist,
+        recentActivities: recentActivities.length > 0 ? recentActivities : loadLocalDB().activities.slice(0, 10)
+      } as any;
     } catch (e) {
-      console.warn("Calculating stats client-side (static environment fallback)");
-      const db = loadLocalDB();
-      const currentMarketers = localMarketers.length > 0 ? localMarketers : db.marketers;
+      console.warn("Calculating stats client-side due to network fallback", e);
+      const dbLocal = loadLocalDB();
+      const currentMarketers = localMarketers.length > 0 ? localMarketers : dbLocal.marketers;
       
       let totalWorkers = 0;
       let totalRevenue = 0;
@@ -414,84 +634,120 @@ export const api = {
         totalWorkers,
         activeStands: currentMarketers.length,
         categoryDist,
-        recentActivities: db.activities.slice(0, 6)
+        recentActivities: dbLocal.activities.slice(0, 7)
       } as any;
     }
   },
 
   // 10. Simulate Live Logs Action
   async simulateAction(): Promise<any> {
-    try {
-      const response = await fetch(getApiUrl("/api/simulate-action"), {
-        method: "POST"
-      });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Simulation API failed");
-      }
-      return JSON.parse(text);
-    } catch (e) {
-      const db = loadLocalDB();
-      if (db.marketers.length === 0) {
-        throw new Error("No marketers registered to simulate with.");
-      }
-      const randomMarketer = db.marketers[Math.floor(Math.random() * db.marketers.length)];
-      const actionTypes = [
-        {
-          type: "customer_scan",
-          message: `Visitor scanned QR code at ${randomMarketer.businessName}`,
-          details: `Verification checked successfully for Stand ${randomMarketer.standNumber}.`
-        },
-        {
-          type: "stand_patrol",
-          message: `Security clearance verified for Stand ${randomMarketer.standNumber}`,
-          details: `${randomMarketer.fullName} reported status ACTIVE.`
-        }
-      ];
-
-      const action = actionTypes[Math.floor(Math.random() * actionTypes.length)];
-      logLocalActivity(db, action.type, action.message, action.details);
-      saveLocalDB(db);
-      return { success: true };
+    const marketers = await this.getMarketers();
+    if (marketers.length === 0) {
+      throw new Error("No marketers registered to simulate with.");
     }
+    const randomMarketer = marketers[Math.floor(Math.random() * marketers.length)];
+    const actionTypes = [
+      {
+        type: "customer_scan",
+        message: `Visitor scanned QR code at ${randomMarketer.businessName}`,
+        details: `Verification checked successfully for Stand ${randomMarketer.standNumber}.`
+      },
+      {
+        type: "stand_patrol",
+        message: `Security clearance verified for Stand ${randomMarketer.standNumber}`,
+        details: `${randomMarketer.fullName} reported status ACTIVE.`
+      }
+    ];
+
+    const action = actionTypes[Math.floor(Math.random() * actionTypes.length)];
+    
+    try {
+      const newActivity: LiveActivity = {
+        id: `act-${Date.now()}`,
+        type: action.type as any,
+        timestamp: new Date().toISOString(),
+        message: action.message,
+        details: action.details
+      };
+      await setDoc(doc(db, "activities", newActivity.id), newActivity);
+    } catch (e) {
+      console.warn("Firestore simulation log failed", e);
+    }
+
+    const dbLocal = loadLocalDB();
+    logLocalActivity(dbLocal, action.type, action.message, action.details);
+    saveLocalDB(dbLocal);
+    return { success: true };
   },
 
   // 11. Update Direct Photo
-  // Allows operators to upload custom JPEG cards / profiles directly
   async updatePhoto(entityId: string, photoBase64: string): Promise<any> {
-    try {
-      const response = await fetch(getApiUrl(`/api/photos/${entityId}`), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photo: photoBase64 })
-      });
-      const { isHtml, text } = await isHtmlResponse(response);
-      if (isHtml || !response.ok) {
-        throw new Error("Photo API failed");
-      }
-      return JSON.parse(text);
-    } catch (e) {
-      const db = loadLocalDB();
-      const marketerIndex = db.marketers.findIndex(m => m.id === entityId);
-      if (marketerIndex !== -1) {
-        db.marketers[marketerIndex].photo = photoBase64;
-        logLocalActivity(db, "marketer_registered", `Updated photo ID for marketer ${db.marketers[marketerIndex].fullName}`, `Stall: ${db.marketers[marketerIndex].businessName}`);
-        saveLocalDB(db);
-        return { success: true, photo: photoBase64 };
-      }
+    const uploadedPhoto = await uploadPhotoStorageIfNeeded(entityId, photoBase64);
+    const finalPhoto = uploadedPhoto || photoBase64;
 
-      // Worker search
-      for (let i = 0; i < db.marketers.length; i++) {
-        const workerIndex = db.marketers[i].workers.findIndex(w => w.id === entityId);
-        if (workerIndex !== -1) {
-          db.marketers[i].workers[workerIndex].photo = photoBase64;
-          logLocalActivity(db, "worker_added", `Updated photo ID for staff ${db.marketers[i].workers[workerIndex].fullName}`, `Stall: ${db.marketers[i].businessName}`);
-          saveLocalDB(db);
-          return { success: true, photo: photoBase64 };
+    try {
+      const marketerRef = doc(db, "marketers", entityId);
+      const marketerSnap = await getDoc(marketerRef);
+      if (marketerSnap.exists()) {
+        const data = marketerSnap.data() as Marketer;
+        await setDoc(marketerRef, { ...data, photo: finalPhoto });
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "marketer_registered",
+          timestamp: new Date().toISOString(),
+          message: `Updated photo ID for marketer ${data.fullName}`,
+          details: `Stall: ${data.businessName}`
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      } else {
+        // Look inside workers of all marketers
+        const querySnapshot = await getDocs(collection(db, "marketers"));
+        for (const docSnap of querySnapshot.docs) {
+          const data = docSnap.data() as Marketer;
+          const workers = data.workers || [];
+          const index = workers.findIndex(w => w.id === entityId);
+          if (index !== -1) {
+            workers[index].photo = finalPhoto;
+            await setDoc(doc(db, "marketers", data.id), { ...data, workers });
+
+            const newActivity: LiveActivity = {
+              id: `act-${Date.now()}`,
+              type: "worker_added",
+              timestamp: new Date().toISOString(),
+              message: `Updated photo ID for staff ${workers[index].fullName}`,
+              details: `Stall: ${data.businessName}`
+            };
+            await setDoc(doc(db, "activities", newActivity.id), newActivity);
+            break;
+          }
         }
       }
-
-      throw new Error("Operator registration code not found in fallback base.");
+    } catch (e: any) {
+      console.warn("Firestore photo update failed, using fallback URL.", e);
     }
+
+    // fallback / cache updates
+    const dbLocal = loadLocalDB();
+    const marketerIndex = dbLocal.marketers.findIndex(m => m.id === entityId);
+    if (marketerIndex !== -1) {
+      dbLocal.marketers[marketerIndex].photo = finalPhoto;
+      logLocalActivity(dbLocal, "marketer_registered", `Updated photo ID for marketer ${dbLocal.marketers[marketerIndex].fullName}`, `Stall: ${dbLocal.marketers[marketerIndex].businessName}`);
+      saveLocalDB(dbLocal);
+      return { success: true, photo: finalPhoto };
+    }
+
+    // Worker search local
+    for (let i = 0; i < dbLocal.marketers.length; i++) {
+      const workerIndex = dbLocal.marketers[i].workers.findIndex(w => w.id === entityId);
+      if (workerIndex !== -1) {
+        dbLocal.marketers[i].workers[workerIndex].photo = finalPhoto;
+        logLocalActivity(dbLocal, "worker_added", `Updated photo ID for staff ${dbLocal.marketers[i].workers[workerIndex].fullName}`, `Stall: ${dbLocal.marketers[i].businessName}`);
+        saveLocalDB(dbLocal);
+        return { success: true, photo: finalPhoto };
+      }
+    }
+
+    return { success: true, photo: photoBase64 };
   }
 };

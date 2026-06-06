@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper to validate document IDs
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Helper for incoming data
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Helper for existing data
+    function existing() {
+      return resource.data;
+    }
+
+    // Marketers collection
+    match /marketers/{marketerId} {
+      allow read: if true;
+      
+      allow create: if isValidId(marketerId) && 
+                    incoming().id == marketerId &&
+                    incoming().fullName is string && incoming().fullName.size() <= 128 &&
+                    incoming().businessName is string && incoming().businessName.size() <= 128 &&
+                    incoming().phone is string && incoming().phone.size() <= 40 &&
+                    incoming().standNumber is string && incoming().standNumber.size() <= 40 &&
+                    incoming().category is string &&
+                    incoming().createdAt is string;
+
+      allow update: if isValidId(marketerId) &&
+                    incoming().id == existing().id &&
+                    incoming().fullName is string &&
+                    incoming().businessName is string;
+
+      allow delete: if isValidId(marketerId);
+    }
+
+    // Live Audit Activities collection
+    match /activities/{activityId} {
+      allow read: if true;
+      
+      allow create: if isValidId(activityId) &&
+                    incoming().id == activityId &&
+                    incoming().type is string &&
+                    incoming().timestamp is string &&
+                    incoming().message is string;
+
+      allow update, delete: if false; // Append-only audit logs
+    }
+  }
+}
