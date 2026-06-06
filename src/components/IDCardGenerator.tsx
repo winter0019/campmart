@@ -303,21 +303,21 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 print:col-span-2">
                 
                 {/* 1. FRONT OF BADGE CARD */}
-                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
+                <div className="bg-white border border-slate-200/90 rounded-[18px] overflow-hidden aspect-[1/1.58] shadow-[0_4px_16px_rgba(0,0,0,0.06)] relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
                   {/* Outer security stripe */}
                   <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
 
                   {/* Header overlay badge card */}
-                  <div className="pt-6 px-6 pb-4 flex items-center justify-between gap-2 border-b border-slate-850 bg-slate-950/25">
+                  <div className="pt-6 px-6 pb-4 flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80">
                     <div className="flex items-center gap-1.5">
-                      <Building className="w-4 h-4 text-emerald-400" />
+                      <Building className="w-4 h-4 text-emerald-600" />
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-slate-350 tracking-wider font-sans">NYSC KATSINA CAMP MARKET</span>
-                        <span className="text-[7.2px] font-bold text-slate-450 font-mono tracking-tight uppercase">CAMP MARKET & VENDOR ACCESS CLEARANCE</span>
+                        <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider font-sans">NYSC KATSINA CAMP MARKET</span>
+                        <span className="text-[7.2px] font-bold text-slate-400 font-mono tracking-tight uppercase">CAMP MARKET & VENDOR ACCESS CLEARANCE</span>
                       </div>
                     </div>
-                    <span className="text-[9.5px] font-black font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/20 py-0.5 px-2 rounded">
+                    <span className="text-[9.5px] font-black font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/20 py-0.5 px-2 rounded">
                       ZONE 1-A
                     </span>
                   </div>
@@ -327,76 +327,81 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     
                     {/* User Profile Frame */}
                     <div className="relative group">
-                      <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-500 to-blue-500 rounded-2xl blur-sm opacity-25 group-hover:opacity-40 transition-opacity" />
+                      <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-500 to-blue-500 rounded-2xl blur-sm opacity-20 group-hover:opacity-35 transition-opacity" />
                       
                       {getPresetGradient(currentEntity.photo) ? (
-                        <div className={`w-28 h-28 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative shadow flex items-center justify-center font-bold text-slate-950 text-3xl border border-slate-750/30 font-sans uppercase`}>
+                        <div className={`w-28 h-28 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative shadow flex items-center justify-center font-bold text-slate-950 text-3xl border border-slate-200 font-sans uppercase`}>
                           {currentEntity.business.slice(0, 2)}
                         </div>
                       ) : (
                         <img 
                           src={currentEntity.photo} 
                           alt={currentEntity.name} 
-                          className="w-28 h-28 rounded-2xl object-cover relative border border-slate-750 shadow-md"
+                          className="w-28 h-28 rounded-2xl object-cover relative border border-slate-200 shadow-md"
                           referrerPolicy="no-referrer"
                         />
                       )}
                     </div>
 
                     {/* Person Credentials and metadata */}
-                    <div className="space-y-1 w-full px-2">
-                      <h4 className="text-base font-extrabold text-slate-100 tracking-tight uppercase leading-snug">
+                    <div className="space-y-1.5 w-full px-2 text-center">
+                      <h4 className="text-base font-black text-black tracking-tight uppercase leading-snug">
                         {currentEntity.name}
                       </h4>
                       
-                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-950 border border-slate-800 mt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-200 mt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-700 font-bold">
                           {currentEntity.role}
                         </span>
                       </div>
 
-                      <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
-                        Merchant: {currentEntity.business}
-                      </p>
+                      <div className="mt-2.5 space-y-0.5">
+                        <p className="text-[11px] text-black font-black uppercase tracking-wide">
+                          TRADE: {currentEntity.category}
+                        </p>
+                        <p className="text-[10px] text-slate-600 font-medium truncate">
+                          Merchant: {currentEntity.business}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Foot layout card */}
-                  <div className="px-6 py-5 bg-slate-950/70 border-t border-slate-850 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex flex-col">
-                      <span className="text-[7.5px] uppercase tracking-wider text-slate-500">Assigned Stalls</span>
-                      <strong className="text-slate-200 mt-0.5 text-sm uppercase">Stand {currentEntity.stand}</strong>
+                  <div className="px-6 py-5 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-col text-left">
+                      <span className="text-[7.5px] uppercase tracking-wider text-slate-400 font-bold">Assigned Stalls</span>
+                      <strong className="text-slate-900 mt-0.5 text-sm uppercase">Stand {currentEntity.stand}</strong>
                     </div>
 
                     {/* ID Badge number bottom line  */}
                     <div className="flex flex-col text-right">
-                      <span className="text-[7.5px] uppercase tracking-wider text-slate-500">Operator ID No</span>
-                      <strong className="font-mono text-emerald-400 mt-0.5 text-xs">{currentEntity.id}</strong>
+                      <span className="text-[7.5px] uppercase tracking-wider text-slate-400 font-bold">Operator ID No</span>
+                      <strong className="font-mono text-emerald-600 mt-0.5 text-xs font-bold">{currentEntity.id}</strong>
                     </div>
                   </div>
 
                 </div>
 
                 {/* 2. BACK OF BADGE CARD */}
-                <div className="bg-slate-900 border border-slate-801 rounded-3xl overflow-hidden aspect-[1/1.58] shadow-2xl relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
+                <div className="bg-white border border-slate-200/90 rounded-[18px] overflow-hidden aspect-[1/1.58] shadow-[0_4px_16px_rgba(0,0,0,0.06)] relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
                   {/* Decorative Magnetic Tape */}
-                  <div className="h-10 bg-slate-950 shrink-0 mt-6 relative flex items-center px-6">
-                    <span className="text-[6.5px] font-mono text-slate-700 tracking-widest font-bold">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+                  <div className="h-10 bg-slate-900 shrink-0 mt-6 relative flex items-center px-6">
+                    <span className="text-[6.5px] font-mono text-slate-400 tracking-widest font-bold">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
                   </div>
 
                   <div className="px-6 py-4 flex-1 flex flex-col justify-between gap-4 mt-2">
                     
                     {/* Legal security disclaimer lines */}
-                    <div className="space-y-2 text-[8px] text-slate-500 leading-normal font-sans border-b border-slate-850 pb-4">
+                    <div className="space-y-2 text-[8px] text-slate-500 leading-normal font-sans border-b border-slate-100 pb-4 text-left">
                       <p>
                         This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of the general camp administration.
                       </p>
                       <p>
                         Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to full clearance revocation.
                       </p>
-                      <div className="flex justify-between font-mono text-[7px] text-slate-600 mt-3 pt-2">
+                      <div className="flex justify-between font-mono text-[7px] text-slate-400 mt-3 pt-2">
                         <span>ISSUED ON: {new Date(currentEntity.createdAt).toLocaleDateString()}</span>
                         <span>SECURITY REF: CP-Z1</span>
                       </div>
@@ -408,7 +413,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                       {/* Interactive dynamic SVG QR representation */}
                       <div 
                         onClick={() => setShowQRModal(true)}
-                        className="p-1.5 bg-white rounded-xl shrink-0 border border-slate-200 shadow-md cursor-pointer hover:bg-slate-50 transition-all hover:scale-110 active:scale-95 group relative"
+                        className="p-1.5 bg-white rounded-xl shrink-0 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:scale-110 active:scale-95 group relative"
                         title="Click to scan and view details"
                       >
                         <QrCode className="w-12 h-12 text-slate-900 group-hover:text-emerald-600 transition-colors" style={{ strokeWidth: 1.5 }} />
@@ -418,26 +423,26 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
 
                       {/* Signature simulation */}
                       <div className="flex-1 flex flex-col items-end text-right">
-                        <div className="font-mono text-[7.5px] text-slate-500 uppercase tracking-widest">Head of Camp Market</div>
-                        <span className="text-slate-300 mt-1 mr-2 text-xs font-serif italic select-none opacity-85 tracking-widest">
+                        <div className="font-mono text-[7.5px] text-slate-400 uppercase tracking-widest">Head of Camp Market</div>
+                        <span className="text-slate-800 mt-1 mr-2 text-xs font-serif italic select-none opacity-85 tracking-widest font-bold">
                           Idris Dangalan
                         </span>
-                        <div className="w-24 h-[1px] bg-slate-800 mt-0.5" />
-                        <span className="text-[7.5px] text-slate-600 mt-1 uppercase tracking-wider">Audit Signature Verified</span>
+                        <div className="w-24 h-[1px] bg-slate-200 mt-0.5" />
+                        <span className="text-[7.5px] text-slate-400 mt-1 uppercase tracking-wider">Audit Signature Verified</span>
                       </div>
                     </div>
 
                   </div>
 
                   {/* Bottom bar represent security protocols */}
-                  <div className="py-4 bg-slate-950/70 border-t border-slate-850 flex flex-col items-center justify-center font-mono">
-                    <div className="text-[6.5px] text-emerald-400 font-semibold tracking-widest uppercase">
+                  <div className="py-4 bg-slate-50/90 border-t border-slate-100 flex flex-col items-center justify-center font-mono">
+                    <div className="text-[6.5px] text-emerald-600 font-black tracking-widest uppercase">
                       CAMP CODE CERTIFICATE CLEARANCE ACTIVATED
                     </div>
                     {/* Fake barcode lines representation */}
-                    <div className="flex gap-[1.5px] h-3.5 mt-2 opacity-50 pb-1">
+                    <div className="flex gap-[1.5px] h-3.5 mt-2 opacity-60 pb-1">
                       {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2].map((w, idx) => (
-                        <div key={idx} className="bg-slate-300" style={{ width: `${w}px` }} />
+                        <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
                       ))}
                     </div>
                   </div>
@@ -567,72 +572,78 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center justify-center max-w-2xl mx-auto">
                 {/* 1. FRONT BADGE CARD PREVIEW */}
-                <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-2xl mx-auto">
+                <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
                   {/* Emerald glow top banner strip */}
                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
                   
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mt-1.5">
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">NYSC KATSINA CAMP</span>
-                    <span className="text-[8px] font-bold font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mt-1.5 bg-slate-50/50 p-1 rounded">
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-850">NYSC KATSINA CAMP</span>
+                    <span className="text-[8px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
                   </div>
 
                   <div className="flex flex-col items-center gap-3 text-center my-auto">
                     {/* Photo */}
                     {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
                       <div className="relative">
-                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 blur-sm" />
+                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-60 blur-sm" />
                         <img 
                           src={currentEntity.photo} 
                           alt={currentEntity.name} 
-                          className="w-24 h-24 rounded-2xl object-cover relative border border-slate-950 z-10" 
+                          className="w-24 h-24 rounded-2xl object-cover relative border border-slate-200 z-10" 
                         />
                       </div>
                     ) : (
                       <div className="relative">
-                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-100 blur-sm" />
+                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-80 blur-sm" />
                         <div className={`w-24 h-24 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
                           {currentEntity.name.slice(0, 2)}
                         </div>
                       </div>
                     )}
 
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-extrabold uppercase tracking-tight text-slate-50">
+                    <div className="space-y-1 text-center">
+                      <h4 className="text-sm font-black uppercase tracking-tight text-black">
                         {currentEntity.name.toUpperCase()}
                       </h4>
-                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-805 text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         {currentEntity.role}
                       </div>
-                      <p className="text-[9.5px] text-slate-500 font-medium tracking-tight">Merchant: {currentEntity.business}</p>
+                      
+                      <div className="mt-2 space-y-0.5">
+                        <p className="text-[10px] text-black font-black uppercase tracking-wide">
+                          TRADE: {currentEntity.category}
+                        </p>
+                        <p className="text-[9.5px] text-slate-500 font-semibold truncate">Merchant: {currentEntity.business}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs text-slate-400">
-                    <div>
-                      <span className="block text-[7px] uppercase tracking-wider text-slate-500 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
-                      <strong className="text-slate-100 uppercase text-[10px] font-extrabold">Stand {currentEntity.stand}</strong>
+                  <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+                    <div className="text-left">
+                      <span className="block text-[7px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
+                      <strong className="text-slate-850 uppercase text-[10px] font-extrabold">Stand {currentEntity.stand}</strong>
                     </div>
                     <div className="text-right">
-                      <span className="block text-[7px] uppercase tracking-wider text-slate-500 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
-                      <strong className="font-mono text-emerald-450 text-[10.5px] font-extrabold">{currentEntity.id}</strong>
+                      <span className="block text-[7px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
+                      <strong className="font-mono text-emerald-600 text-[10.5px] font-extrabold">{currentEntity.id}</strong>
                     </div>
                   </div>
                 </div>
 
                 {/* 2. BACK BADGE CARD PREVIEW */}
-                <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-800 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-2xl mx-auto">
+                <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
                   {/* Magnetic strip mock */}
                   <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
-                    <span className="text-[6px] font-mono text-slate-600 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+                    <span className="text-[6px] font-mono text-slate-400 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-between mt-12">
+                  <div className="flex-1 flex flex-col justify-between mt-12 text-left">
                     {/* Disclaimer */}
-                    <div className="space-y-2 text-[7.5px] text-slate-550 leading-relaxed border-b border-slate-800/60 pb-3">
+                    <div className="space-y-2 text-[7.5px] text-slate-550 leading-relaxed border-b border-slate-100 pb-3">
                       <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
                       <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
-                      <div className="flex justify-between font-mono text-[6.5px] text-slate-600 pt-1">
+                      <div className="flex justify-between font-mono text-[6.5px] text-slate-400 pt-1">
                         <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
                         <span>REF: CP-Z1</span>
                       </div>
@@ -640,7 +651,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
 
                     {/* Signature and barcode items */}
                     <div className="flex items-center justify-between gap-4 py-2 mt-auto">
-                      <div className="p-1 bg-white rounded-lg border border-slate-200 w-10 h-10 flex items-center justify-center shrink-0">
+                      <div className="p-1 bg-white rounded-lg border border-slate-205 w-10 h-10 flex items-center justify-center shrink-0">
                         <div className="grid grid-cols-4 gap-0.5 w-full h-full p-0.5">
                           <div className="bg-slate-900 rounded-xs" />
                           <div className="bg-slate-900 rounded-xs" />
@@ -662,19 +673,19 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                       </div>
 
                       <div className="text-right flex-1">
-                        <span className="block text-[7px] text-slate-600 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
-                        <span className="text-slate-300 font-serif italic tracking-widest text-[10px] block mt-1">Idris Dangalan</span>
-                        <div className="w-14 h-[1px] bg-slate-800 ml-auto mt-0.5" />
-                        <span className="text-[7px] text-slate-500 uppercase block mt-0.5 leading-none">Signature Verified</span>
+                        <span className="block text-[7px] text-slate-450 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
+                        <span className="text-slate-800 font-serif italic tracking-widest text-[10px] block mt-1 font-bold">Idris Dangalan</span>
+                        <div className="w-14 h-[1px] bg-slate-200 ml-auto mt-0.5" />
+                        <span className="text-[7px] text-slate-400 uppercase block mt-0.5 leading-none">Signature Verified</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="py-2 mt-auto border-t border-slate-800/80 text-center flex flex-col items-center">
-                    <span className="text-[6px] text-emerald-400 font-extrabold tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
-                    <div className="flex gap-[1px] h-3 mt-1.5 opacity-50">
+                  <div className="py-2 mt-auto border-t border-slate-100 text-center flex flex-col items-center">
+                    <span className="text-[6px] text-emerald-600 font-black tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
+                    <div className="flex gap-[1px] h-3 mt-1.5 opacity-60">
                       {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2].map((w, idx) => (
-                        <div key={idx} className="bg-slate-500" style={{ width: `${w}px` }} />
+                        <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
                       ))}
                     </div>
                   </div>
@@ -708,72 +719,78 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
       {currentEntity && (
         <div className="print-only">
           {/* Card Front view layout */}
-          <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-2xl mx-auto">
+          <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
             {/* Emerald glow top banner strip */}
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
             
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mt-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">NYSC KATSINA CAMP</span>
-              <span className="text-[9px] font-bold font-mono text-emerald-450 bg-emerald-950/80 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mt-1.5 bg-slate-50/50 p-1 rounded">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-800 font-sans">NYSC KATSINA CAMP</span>
+              <span className="text-[9px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
             </div>
 
             <div className="flex flex-col items-center gap-4 text-center my-auto">
               {/* Photo */}
               {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
                 <div className="relative">
-                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 blur-sm" />
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-60 blur-sm" />
                   <img 
                     src={currentEntity.photo} 
                     alt={currentEntity.name} 
-                    className="w-[105px] h-[105px] rounded-2xl object-cover relative border border-slate-950 z-10" 
+                    className="w-[105px] h-[105px] rounded-2xl object-cover relative border border-slate-200 z-10" 
                   />
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-100 blur-sm" />
+                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-555 opacity-80 blur-sm" />
                   <div className={`w-[105px] h-[105px] rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-3xl uppercase`}>
                     {currentEntity.name.slice(0, 2)}
                   </div>
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <h4 className="text-base font-extrabold uppercase tracking-tight text-slate-50">
+              <div className="space-y-1.5 text-center">
+                <h4 className="text-base font-black uppercase tracking-tight text-black">
                   {currentEntity.name.toUpperCase()}
                 </h4>
-                <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-slate-900 border border-slate-805 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[11px] font-mono font-bold uppercase tracking-wider text-slate-705">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {currentEntity.role}
                 </div>
-                <p className="text-[10.5px] text-slate-500 font-medium tracking-tight">Merchant: {currentEntity.business}</p>
+                
+                <div className="mt-2.5 space-y-0.5">
+                  <p className="text-[11px] text-black font-black uppercase tracking-wide">
+                    TRADE: {currentEntity.category}
+                  </p>
+                  <p className="text-[10.5px] text-slate-500 font-semibold truncate">Merchant: {currentEntity.business}</p>
+                </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 pt-3 flex items-center justify-between text-xs text-slate-400">
-              <div>
-                <span className="block text-[7.5px] uppercase tracking-wider text-slate-505 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
-                <strong className="text-slate-100 uppercase text-[12px] font-extrabold">Stand {currentEntity.stand}</strong>
+            <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
+              <div className="text-left">
+                <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
+                <strong className="text-slate-850 uppercase text-[12px] font-extrabold">Stand {currentEntity.stand}</strong>
               </div>
               <div className="text-right">
-                <span className="block text-[7.5px] uppercase tracking-wider text-slate-505 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
-                <strong className="font-mono text-emerald-450 text-[12.5px] font-extrabold">{currentEntity.id}</strong>
+                <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
+                <strong className="font-mono text-emerald-600 text-[12.5px] font-extrabold">{currentEntity.id}</strong>
               </div>
             </div>
           </div>
 
           {/* Card Back view layout */}
-          <div className="bg-slate-950 text-slate-100 p-6 rounded-3xl border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-2xl mx-auto">
+          <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto mt-6">
             {/* Magnetic strip mock */}
             <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
-              <span className="text-[6.5px] font-mono text-slate-650 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+              <span className="text-[6.5px] font-mono text-slate-400 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
             </div>
 
-            <div className="flex-1 flex flex-col justify-between mt-18">
+            <div className="flex-1 flex flex-col justify-between mt-18 text-left">
               {/* Disclaimer */}
-              <div className="space-y-2 text-[8px] text-slate-500 leading-relaxed border-b border-slate-800/60 pb-3">
+              <div className="space-y-2 text-[8px] text-slate-500 leading-relaxed border-b border-slate-100 pb-3">
                 <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
                 <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
-                <div className="flex justify-between font-mono text-[7px] text-slate-600 pt-1">
+                <div className="flex justify-between font-mono text-[7px] text-slate-450 pt-1">
                   <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
                   <span>REF: CP-Z1</span>
                 </div>
@@ -803,19 +820,19 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                 </div>
 
                 <div className="text-right flex-1">
-                  <span className="block text-[7.5px] text-slate-605 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
-                  <span className="text-slate-300 font-serif italic tracking-widest text-[12px] block mt-1">Idris Dangalan</span>
-                  <div className="w-18 h-[1px] bg-slate-800 ml-auto mt-0.5" />
-                  <span className="text-[7.5px] text-slate-550 uppercase block mt-0.5 leading-none">Signature Verified</span>
+                  <span className="block text-[7.5px] text-slate-450 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
+                  <span className="text-slate-803 font-serif italic tracking-widest text-[12px] block mt-1 font-bold">Idris Dangalan</span>
+                  <div className="w-18 h-[1px] bg-slate-200 ml-auto mt-0.5" />
+                  <span className="text-[7.5px] text-slate-400 uppercase block mt-0.5 leading-none font-medium">Signature Verified</span>
                 </div>
               </div>
             </div>
 
-            <div className="py-2 mt-auto border-t border-slate-800/80 text-center flex flex-col items-center">
-              <span className="text-[7px] text-emerald-400 font-extrabold tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
-              <div className="flex gap-[1.5px] h-4 mt-2 opacity-50">
+            <div className="py-2 mt-auto border-t border-slate-100 text-center flex flex-col items-center">
+              <span className="text-[7px] text-emerald-600 font-black tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
+              <div className="flex gap-[1.5px] h-4 mt-2 opacity-60">
                 {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2,2,1,3,1,2].map((w, idx) => (
-                  <div key={idx} className="bg-slate-500" style={{ width: `${w}px` }} />
+                  <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
                 ))}
               </div>
             </div>

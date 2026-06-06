@@ -34,6 +34,7 @@ import { downloadIDCard } from "../utils/cardUtils";
 import { Marketer, Worker } from "../types";
 import { getAmountDue, formatNaira, downloadReceiptImage } from "../utils/pricing";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 const CATEGORIES = [
   "Tailor",
@@ -326,6 +327,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
   };
 
   const [downloadingSlip, setDownloadingSlip] = useState(false);
+  const [sharingSlip, setSharingSlip] = useState(false);
 
   const handleDownloadSlipPNG = () => {
     const element = document.getElementById("confirmation-slip-preview");
@@ -346,9 +348,95 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
       a.click();
       document.body.removeChild(a);
       setDownloadingSlip(false);
-    }).catch((err) => {
+      setSyncMessage({ type: "success", text: "Confirmation Slip downloaded successfully as PNG Image!" });
+    }).catch((err: any) => {
       console.error("html2canvas render error:", err);
       setDownloadingSlip(false);
+      setSyncMessage({ type: "error", text: "Failed to render PNG image." });
+    });
+  };
+
+  const handleDownloadSlipPDF = () => {
+    const element = document.getElementById("confirmation-slip-preview");
+    if (!element) return;
+    setDownloadingSlip(true);
+    html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false
+    }).then((canvas) => {
+      const doc = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210; // A4 size width in mm
+      const pageHeight = 295; // A4 size height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      doc.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      
+      doc.save(`NYSC_Confirmation_Slip_${printSlipTarget?.businessName.replace(/\s+/g, "_") || "Stall"}.pdf`);
+      setDownloadingSlip(false);
+      setSyncMessage({ type: "success", text: "Confirmation Slip downloaded successfully as PDF!" });
+    }).catch((err: any) => {
+      console.error("html2canvas or jspdf render error:", err);
+      setDownloadingSlip(false);
+      setSyncMessage({ type: "error", text: "Failed to render PDF: " + err.message });
+    });
+  };
+
+  const handleShareSlip = () => {
+    const element = document.getElementById("confirmation-slip-preview");
+    if (!element) return;
+    setSharingSlip(true);
+    html2canvas(element, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false
+    }).then((canvas) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setSharingSlip(false);
+          setSyncMessage({ type: "error", text: "Could not process document image." });
+          return;
+        }
+
+        const fileName = `NYSC_Confirmation_Slip_${printSlipTarget?.businessName.replace(/\s+/g, "_") || "Stall"}.png`;
+        const file = new File([blob], fileName, { type: "image/png" });
+        
+        const copyShareText = () => {
+          const shareText = `NYSC KATSINA CAMP MARKET CONFIRMATION:\nOperator Name: ${printSlipTarget?.fullName}\nBusiness: ${printSlipTarget?.businessName}\nStand assigned: Stand ${printSlipTarget?.standNumber}\nVerification code: CM-${printSlipTarget?.id.substring(4).toUpperCase()}`;
+          navigator.clipboard.writeText(shareText).then(() => {
+            setSyncMessage({ type: "success", text: "Web Share not supported in this browser. Details copied to clipboard!" });
+          }).catch(() => {
+            setSyncMessage({ type: "error", text: "Could not share or copy details. Please take a snapshot of your screen." });
+          });
+        };
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: "NYSC Confirmation Slip",
+            text: `Official registration confirmation slip for NYSC Katsina Camp Market exhibitor: ${printSlipTarget?.fullName} (${printSlipTarget?.businessName}).`
+          }).then(() => {
+            setSharingSlip(false);
+            setSyncMessage({ type: "success", text: "Confirmation slip shared successfully!" });
+          }).catch((err: any) => {
+            console.error("navigator.share failed, failing back to clipboard:", err);
+            setSharingSlip(false);
+            copyShareText();
+          });
+        } else {
+          setSharingSlip(false);
+          copyShareText();
+        }
+      }, "image/png");
+    }).catch((err: any) => {
+      console.error("html2canvas render error:", err);
+      setSharingSlip(false);
+      setSyncMessage({ type: "error", text: "Could not generate screenshot for sharing." });
     });
   };
   
@@ -761,27 +849,45 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2.5 sticky bottom-0 z-10 backdrop-blur-md">
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                onClick={handleDownloadSlipPDF}
+                disabled={downloadingSlip}
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+              >
+                <Download className="w-4 h-4" />
+                <span>{downloadingSlip ? "Generating..." : "Download PDF"}</span>
+              </button>
+              
+              <button
+                onClick={handleShareSlip}
+                disabled={sharingSlip}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{sharingSlip ? "Sharing..." : "Share Slip"}</span>
+              </button>
+
               <button
                 onClick={handleDownloadSlipPNG}
                 disabled={downloadingSlip}
-                className="flex-[1.5] py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-750 border border-slate-705 text-slate-300 disabled:text-slate-500 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" />
-                <span>{downloadingSlip ? "Saving Image..." : "Download Confirmation Slip (Image)"}</span>
+                <Download className="w-4 h-4 text-emerald-450" />
+                <span>Download PNG</span>
               </button>
+
               <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-755 border border-slate-705 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+                onClick={() => window.print()}
+                className="py-3 px-4 bg-slate-800 hover:bg-slate-750 border border-slate-705 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5"
               >
                 <Printer className="w-4 h-4 text-emerald-400" />
-                <span>Print PDF</span>
+                <span>Print</span>
               </button>
+
               <button
                 onClick={() => setPrintSlipTarget(null)}
-                className="py-3 px-5 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors border border-slate-800"
+                className="py-3 px-4 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-205 rounded-xl text-xs font-semibold cursor-pointer transition-colors border border-slate-800"
               >
                 Close
               </button>
@@ -2588,27 +2694,45 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2.5 sticky bottom-0 z-10 backdrop-blur-md">
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row gap-2 sticky bottom-0 z-10 backdrop-blur-md">
+              <button
+                onClick={handleDownloadSlipPDF}
+                disabled={downloadingSlip}
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+              >
+                <Download className="w-4 h-4" />
+                <span>{downloadingSlip ? "Generating..." : "Download PDF"}</span>
+              </button>
+              
+              <button
+                onClick={handleShareSlip}
+                disabled={sharingSlip}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{sharingSlip ? "Sharing..." : "Share Slip"}</span>
+              </button>
+
               <button
                 onClick={handleDownloadSlipPNG}
                 disabled={downloadingSlip}
-                className="flex-[1.5] py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10"
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-750 border border-slate-705 text-slate-300 disabled:text-slate-500 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" />
-                <span>{downloadingSlip ? "Saving Image..." : "Download Confirmation Slip (Image)"}</span>
+                <Download className="w-4 h-4 text-emerald-450" />
+                <span>Download PNG</span>
               </button>
+
               <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-755 border border-slate-705 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+                onClick={() => window.print()}
+                className="py-3 px-4 bg-slate-800 hover:bg-slate-755 border border-slate-705 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5"
               >
-                <Printer className="w-4 h-4 text-emerald-400" />
-                <span>Print PDF</span>
+                <Printer className="w-4 h-4 text-emerald-450" />
+                <span>Print</span>
               </button>
+
               <button
                 onClick={() => setPrintSlipTarget(null)}
-                className="py-3 px-5 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors border border-slate-800"
+                className="py-3 px-4 bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-slate-205 rounded-xl text-xs font-semibold cursor-pointer transition-colors border border-slate-800"
               >
                 Close
               </button>

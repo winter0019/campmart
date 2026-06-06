@@ -40,8 +40,8 @@ export function downloadIDCard(entity: {
   const photoStr = entity.photo || "";
   const createdAtStr = entity.createdAt || new Date().toISOString();
 
-  // Background Slate-900 style
-  ctx.fillStyle = "#0f172a";
+  // Background Slate-900 style -> White background
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Fallback rounding method for older browsers
@@ -68,12 +68,12 @@ export function downloadIDCard(entity: {
     ctx.fillStyle = borderGrad;
     ctx.fillRect(0, 0, canvas.width, 10);
 
-    // 2. Header Box Background
-    ctx.fillStyle = "#020617";
+    // 2. Header Box Background (soft light off-white)
+    ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 10, canvas.width, 64);
 
-    // 3. Header Texts
-    ctx.fillStyle = "#cbd5e1";
+    // 3. Header Texts (dark contrast)
+    ctx.fillStyle = "#1e293b";
     ctx.font = "bold 11px sans-serif";
     ctx.fillText("NYSC KATSINA CAMP MARKET", 24, 38);
 
@@ -82,13 +82,13 @@ export function downloadIDCard(entity: {
     ctx.fillText("CAMP MARKET & VENDOR ACCESS CLEARANCE", 24, 56);
 
     // ZONE 1-A badge pill
-    ctx.fillStyle = "#064e40";
+    ctx.fillStyle = "#ecfdf5";
     drawRoundRect(canvas.width - 96, 26, 72, 26, 6);
     ctx.fill();
-    ctx.strokeStyle = "rgba(16,185,129,0.2)";
+    ctx.strokeStyle = "rgba(16,185,129,0.3)";
     ctx.stroke();
 
-    ctx.fillStyle = "#10b981";
+    ctx.fillStyle = "#047857";
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "center";
     ctx.fillText("ZONE 1-A", canvas.width - 96 + 36, 42);
@@ -107,23 +107,23 @@ export function downloadIDCard(entity: {
     ctx.fill();
 
     const triggerFrontDownload = () => {
-      // 5. Credentials Name
-      ctx.fillStyle = "#f8fafc";
+      // 5. Credentials Name (bold black!)
+      ctx.fillStyle = "#000000";
       ctx.font = "bold 18px sans-serif";
       ctx.textAlign = "center";
       ctx.fillText(primaryName.toUpperCase(), canvas.width / 2, 276);
 
       // Role tag pill background
-      ctx.fillStyle = "#020617";
+      ctx.fillStyle = "#f1f5f9";
       ctx.font = "bold 10px monospace";
       const txt = roleName.toUpperCase();
       const textWidth = ctx.measureText(txt).width;
       const px = 12;
       ctx.beginPath();
       drawRoundRect(canvas.width / 2 - (textWidth + px * 2) / 2, 296, textWidth + px * 2, 24, 12);
-      ctx.fillStyle = "#020617";
+      ctx.fillStyle = "#f1f5f9";
       ctx.fill();
-      ctx.strokeStyle = "#1e293b";
+      ctx.strokeStyle = "#cbd5e1";
       ctx.stroke();
 
       // Pulsing status indicator dot inside card
@@ -132,20 +132,25 @@ export function downloadIDCard(entity: {
       ctx.arc(canvas.width / 2 - textWidth / 2 - 2, 308, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = "#e2e8f0";
+      ctx.fillStyle = "#334155";
       ctx.textAlign = "center";
       ctx.fillText(txt, canvas.width / 2 + 6, 311);
 
-      // 6. Merchant / Shop Name
-      ctx.fillStyle = "#94a3b8";
+      // 6. Bearer's Trade category (bold black!) and merchant name
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`TRADE: ${(entity.category || "General").toUpperCase()}`, canvas.width / 2, 348);
+
+      ctx.fillStyle = "#4b5563";
       ctx.font = "500 12px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(`Merchant: ${businessName}`, canvas.width / 2, 355);
+      ctx.fillText(`Merchant: ${businessName}`, canvas.width / 2, 368);
 
       // 7. Footer Layout
-      ctx.fillStyle = "#020617";
+      ctx.fillStyle = "#f8fafc";
       ctx.fillRect(0, canvas.height - 90, canvas.width, 90);
-      ctx.strokeStyle = "#1e293b";
+      ctx.strokeStyle = "#e2e8f0";
       ctx.beginPath();
       ctx.moveTo(0, canvas.height - 90);
       ctx.lineTo(canvas.width, canvas.height - 90);
@@ -156,7 +161,7 @@ export function downloadIDCard(entity: {
       ctx.fillStyle = "#64748b";
       ctx.font = "bold 9px sans-serif";
       ctx.fillText("ASSIGNED STALLS", 24, canvas.height - 58);
-      ctx.fillStyle = "#f1f5f9";
+      ctx.fillStyle = "#0f172a";
       ctx.font = "bold 15px sans-serif";
       ctx.fillText(`Stand ${standNumber}`, 24, canvas.height - 35);
 
@@ -165,7 +170,7 @@ export function downloadIDCard(entity: {
       ctx.fillStyle = "#64748b";
       ctx.font = "bold 9px sans-serif";
       ctx.fillText("OPERATOR ID NO", canvas.width - 24, canvas.height - 58);
-      ctx.fillStyle = "#10b981";
+      ctx.fillStyle = "#047857";
       ctx.font = "bold 14px monospace";
       ctx.fillText(entity.id, canvas.width - 24, canvas.height - 35);
 

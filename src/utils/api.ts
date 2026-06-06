@@ -102,38 +102,35 @@ export const api = {
 
       return JSON.parse(text);
     } catch (e: any) {
-      // If server returned HTML, or connection failed, use local fallback logic
-      if (e.message === "HTML_RESPONSE" || e.message.includes("Failed to fetch") || e.message.includes("Load failed")) {
-        console.warn("Running in Static Fallback Mode (Netlify environment detected)");
-        
-        const usernameLower = username.toLowerCase();
-        
-        // Match Evans Okwor & Idris Dangalan fallback credentials
-        if (usernameLower === "admin" && (password === "admin" || password === "admin_change_this_on_netlify")) {
-          return {
-            token: "local-jwt-token-admin",
-            user: { id: "admin-user", username: "admin", fullName: "Idris Dangalan", role: "admin" }
-          };
-        }
-        if (usernameLower === "admin001" && (password === "evans001" || password === "admin001_change_this_on_netlify")) {
-          return {
-            token: "local-jwt-token-admin-evans",
-            user: { id: "admin-user-evans", username: "admin001", fullName: "Mr. Evans Okwor", role: "admin" }
-          };
-        }
-
-        // Check if username/password matches local marketer
-        const db = loadLocalDB();
-        const found = db.marketers.find(m => m.fullName.toLowerCase() === usernameLower || m.businessName.toLowerCase() === usernameLower);
-        if (found && (password === found.phone || password === "password")) {
-          return {
-            token: `local-jwt-token-${found.id}`,
-            user: { id: found.id, username: found.fullName, fullName: found.fullName, role: "marketer" }
-          };
-        }
-        throw new Error("Invalid master credentials.");
+      // Unconditionally use local fallback logic on any connection, CORS, or 404 server error
+      console.warn("Running in Static Fallback Mode (Netlify or CORS redirection detected)", e);
+      
+      const usernameLower = username.toLowerCase();
+      
+      // Match Evans Okwor & Idris Dangalan fallback credentials
+      if (usernameLower === "admin" && (password === "admin" || password === "admin_change_this_on_netlify")) {
+        return {
+          token: "local-jwt-token-admin",
+          user: { id: "admin-user", username: "admin", fullName: "Idris Dangalan", role: "admin" }
+        };
       }
-      throw e;
+      if (usernameLower === "admin001" && (password === "evans001" || password === "admin001_change_this_on_netlify")) {
+        return {
+          token: "local-jwt-token-admin-evans",
+          user: { id: "admin-user-evans", username: "admin001", fullName: "Mr. Evans Okwor", role: "admin" }
+        };
+      }
+
+      // Check if username/password matches local marketer
+      const db = loadLocalDB();
+      const found = db.marketers.find(m => m.fullName.toLowerCase() === usernameLower || m.businessName.toLowerCase() === usernameLower);
+      if (found && (password === found.phone || password === "password")) {
+        return {
+          token: `local-jwt-token-${found.id}`,
+          user: { id: found.id, username: found.fullName, fullName: found.fullName, role: "marketer" }
+        };
+      }
+      throw new Error("Invalid master credentials.");
     }
   },
 
