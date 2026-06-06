@@ -107,7 +107,7 @@
   
   .print-only {
     display: grid !important;
-    grid-template-cols: 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 2rem !important;
     position: absolute !important;
     left: 20px !important;
