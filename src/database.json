@@ -1,4 +1,171 @@
 {
-  "marketers": [],
-  "activities": []
+  "marketers": [
+    {
+      "id": "mkt-1",
+      "fullName": "Aminu Katsina",
+      "businessName": "Arewa Royal Kitchen",
+      "phone": "08031122334",
+      "standNumber": "R-02",
+      "category": "Restaurant",
+      "description": "Authentic Northern Nigerian local dishes, tuwo, masa, and fura da nono.",
+      "photo": "preset:emerald",
+      "createdAt": "2026-06-05T09:12:00.000Z",
+      "workers": [
+        {
+          "id": "wrk-101",
+          "fullName": "Musa Aminu",
+          "phone": "08031122335",
+          "role": "Chef Manager",
+          "marketerId": "mkt-1",
+          "createdAt": "2026-06-05T09:15:00.000Z",
+          "photo": "preset:cyber"
+        },
+        {
+          "id": "wrk-102",
+          "fullName": "Suleiman Ibrahim",
+          "phone": "08031122336",
+          "role": "Assistant Cook",
+          "marketerId": "mkt-1",
+          "createdAt": "2026-06-05T09:20:00.000Z",
+          "photo": "preset:solar"
+        },
+        {
+          "id": "wrk-103",
+          "fullName": "Fatima Bello",
+          "phone": "08031122337",
+          "role": "Cashier",
+          "marketerId": "mkt-1",
+          "createdAt": "2026-06-05T09:22:00.000Z",
+          "photo": "preset:sunset"
+        }
+      ],
+      "verificationStatus": "verified",
+      "amountPaid": 60000
+    },
+    {
+      "id": "mkt-2",
+      "fullName": "Hajiya Aisha Bello",
+      "businessName": "Katsina Tailoring Hub",
+      "phone": "08064433221",
+      "standNumber": "T-12",
+      "category": "Tailor",
+      "description": "Express sewing and adjustments of NYSC uniforms, khakis, and custom designs.",
+      "photo": "preset:sunset",
+      "createdAt": "2026-06-05T10:30:00.000Z",
+      "workers": [
+        {
+          "id": "wrk-201",
+          "fullName": "Usman Alhaji",
+          "phone": "08064433222",
+          "role": "Senior Tailor",
+          "marketerId": "mkt-2",
+          "createdAt": "2026-06-05T10:35:00.000Z",
+          "photo": "preset:ocean"
+        },
+        {
+          "id": "wrk-202",
+          "fullName": "Zainab Ahmed",
+          "phone": "08064433223",
+          "role": "Apprentice Coordinator",
+          "marketerId": "mkt-2",
+          "createdAt": "2026-06-05T10:40:00.000Z",
+          "photo": "preset:purple"
+        }
+      ],
+      "verificationStatus": "verified",
+      "amountPaid": 15000
+    },
+    {
+      "id": "mkt-3",
+      "fullName": "Alhaji Ibrahim",
+      "businessName": "Alhaji Provision Store",
+      "phone": "09025566778",
+      "standNumber": "P-05",
+      "category": "Provision",
+      "description": "General household items, beverages, snacks, buckets, and toiletries.",
+      "photo": "preset:ocean",
+      "createdAt": "2026-06-05T11:45:00.000Z",
+      "workers": [
+        {
+          "id": "wrk-301",
+          "fullName": "Kabiru Ibrahim",
+          "phone": "09025566779",
+          "role": "Store Attendant",
+          "marketerId": "mkt-3",
+          "createdAt": "2026-06-05T11:50:00.000Z",
+          "photo": "preset:cyber"
+        }
+      ],
+      "verificationStatus": "verified",
+      "amountPaid": 40000
+    },
+    {
+      "id": "mkt-4",
+      "fullName": "Innocent Okoli",
+      "businessName": "Fast-Pay POS & Photocopy",
+      "phone": "08139988776",
+      "standNumber": "P-18",
+      "category": "POS",
+      "description": "High-speed point of sale cash withdrawals, bank transfers, photocopying, and laminating.",
+      "photo": "preset:purple",
+      "createdAt": "2026-06-05T14:20:00.000Z",
+      "workers": [],
+      "verificationStatus": "pending",
+      "amountPaid": 0
+    },
+    {
+      "id": "mkt-5",
+      "fullName": "Emmanuel Chinedu",
+      "businessName": "Classic Barbers & Saloon",
+      "phone": "07056677889",
+      "standNumber": "B-03",
+      "category": "Barbing",
+      "description": "Professional executive hair cuts and hair treatment on camp ground.",
+      "photo": "preset:cyber",
+      "createdAt": "2026-06-05T15:05:00.000Z",
+      "workers": [
+        {
+          "id": "wrk-501",
+          "fullName": "Promise Okafor",
+          "phone": "07056677890",
+          "role": "Assistant Stylist",
+          "marketerId": "mkt-5",
+          "createdAt": "2026-06-05T15:10:00.000Z",
+          "photo": "preset:sunset"
+        }
+      ],
+      "verificationStatus": "verified",
+      "amountPaid": 12000
+    }
+  ],
+  "activities": [
+    {
+      "id": "act-1",
+      "type": "customer_scan",
+      "timestamp": "2026-06-06T14:35:00.000Z",
+      "message": "Visitor scanned QR code at Arewa Royal Kitchen",
+      "details": "Verification checked successfully for Stand R-02."
+    },
+    {
+      "id": "act-2",
+      "type": "stand_patrol",
+      "timestamp": "2026-06-06T14:12:00.000Z",
+      "message": "Security clearance verified for Stand T-12 (Katsina Tailoring Hub)",
+      "details": "Aisha Bello reported status ACTIVE."
+    },
+    {
+      "id": "act-3",
+      "type": "marketer_registered",
+      "timestamp": "2026-06-05T14:20:00.000Z",
+      "message": "Registered new campaign marketer: Fast-Pay POS & Photocopy",
+      "details": "Managed by Innocent Okoli at Stand P-18."
+    },
+    {
+      "id": "act-4",
+      "type": "worker_added",
+      "timestamp": "2026-06-05T11:50:00.000Z",
+      "message": "Added worker: Kabiru Ibrahim under Alhaji Provision Store",
+      "details": "Assigned role: Store Attendant."
+    }
+  ]
 }

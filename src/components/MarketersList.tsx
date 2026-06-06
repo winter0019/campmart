@@ -684,13 +684,13 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
 
             {/* Modal Preview Body */}
-            <div className="p-6 flex-1 overflow-y-auto bg-slate-950/40">
+            <div className="p-6 flex-1 overflow-auto bg-slate-950/40 flex items-start justify-center custom-scrollbar">
               <div 
                 id="confirmation-slip-preview"
-                className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 font-sans shadow-lg max-w-full leading-relaxed mx-auto text-left"
+                className="bg-white text-slate-900 p-8 rounded-2xl border border-slate-300 font-sans shadow-lg leading-relaxed mx-auto text-left w-[640px] shrink-0"
               >
                 {/* Top Bar Branding */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-slate-300 pb-4 mb-5 gap-3">
+                <div className="flex items-center justify-between border-b-2 border-slate-300 pb-5 mb-5">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-305 flex items-center justify-center font-bold font-sans text-lg shrink-0">
                       NYSC
@@ -701,8 +701,8 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                     </div>
                   </div>
                   
-                  <div className="text-left sm:text-right">
-                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-650 uppercase">
+                  <div className="text-right">
+                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-655 uppercase">
                       CONFIRMATION SLIP
                     </span>
                     <p className="text-[8.5px] text-slate-500 font-mono mt-0.5">REF: CM-{printSlipTarget.id.substring(4).toUpperCase()}</p>
@@ -710,7 +710,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 </div>
 
                 {/* Main Details Panel */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+                <div className="grid grid-cols-3 gap-6 mb-5">
                   {/* Left Column - Marketer Profile Photo */}
                   <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                     {getPresetGradient(printSlipTarget.photo) ? (
@@ -732,35 +732,35 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                   </div>
 
                   {/* Right Columns - Info Fields */}
-                  <div className="sm:col-span-2 space-y-2.5 text-xs text-slate-700">
+                  <div className="col-span-2 space-y-2.5 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-505 font-semibold font-sans text-[9px] uppercase tracking-wider">Business/Brand:</span>
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Business/Brand:</span>
                       <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
                     </div>
                     
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-505 font-semibold font-sans text-[9px] uppercase tracking-wider">Stand Code:</span>
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Stand Code:</span>
                       <span className="font-mono text-emerald-700 font-black text-[11px]">STAND {printSlipTarget.standNumber}</span>
                     </div>
 
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-505 font-semibold font-sans text-[9px] uppercase tracking-wider">Category Segment:</span>
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Category Segment:</span>
                       <span className="font-bold text-slate-800">{printSlipTarget.category}</span>
                     </div>
 
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-505 font-semibold font-sans text-[9px] uppercase tracking-wider">Cell Number:</span>
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Cell Number:</span>
                       <span className="font-mono text-slate-800 font-semibold">{printSlipTarget.phone}</span>
                     </div>
 
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-505 font-semibold font-sans text-[9px] uppercase tracking-wider">Audit Match:</span>
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Audit Match:</span>
                       <span className={`font-mono text-[9px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {printSlipTarget.verificationStatus === "verified" ? "★ APPROVED & SEALED" : "★ PENDING AUDIT"}
                       </span>
                     </div>
                   </div>
-                </div>
+                </div></div>
 
                 {/* Description */}
                 <div className="bg-slate-50 border border-slate-150 rounded-xl p-3 mb-5 text-[11px] text-slate-600 font-sans italic">
@@ -2525,17 +2525,14 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 className="p-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Preview Body */}
-            <div className="p-6 flex-1 overflow-y-auto bg-slate-950/40">
+               {/* Modal Preview Body */}
+            <div className="p-6 flex-1 overflow-auto bg-slate-950/40 flex items-start justify-center custom-scrollbar">
               <div 
                 id="confirmation-slip-preview"
-                className="bg-white text-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-300 font-sans shadow-lg max-w-full leading-relaxed mx-auto text-left"
+                className="bg-white text-slate-900 p-8 rounded-2xl border border-slate-300 font-sans shadow-lg leading-relaxed mx-auto text-left w-[640px] shrink-0"
               >
                 {/* Top Bar Branding */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-slate-300 pb-4 mb-5 gap-3">
+                <div className="flex items-center justify-between border-b-2 border-slate-300 pb-5 mb-5">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-305 flex items-center justify-center font-bold font-sans text-lg shrink-0">
                       NYSC
@@ -2546,8 +2543,8 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                     </div>
                   </div>
                   
-                  <div className="text-left sm:text-right">
-                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-600 uppercase">
+                  <div className="text-right">
+                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-655 uppercase">
                       CONFIRMATION SLIP
                     </span>
                     <p className="text-[8.5px] text-slate-500 font-mono mt-0.5">REF: CM-{printSlipTarget.id.substring(4).toUpperCase()}</p>
@@ -2555,11 +2552,57 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 </div>
 
                 {/* Main Details Panel */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-5">
+                <div className="grid grid-cols-3 gap-6 mb-5">
                   {/* Left Column - Marketer Profile Photo */}
                   <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                     {getPresetGradient(printSlipTarget.photo) ? (
-                      <div className={`w-24 h-24 rounded-xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-sm flex items-center justify-center font-bold text-slate-950 text-3xl uppercase border border-slate-300`}>
+                      <div className={`w-24 h-24 rounded-xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-sm flex items-center justify-center font-bold text-slate-905 text-3xl uppercase border border-slate-300`}>
+                        {printSlipTarget.businessName.slice(0, 2)}
+                      </div>
+                    ) : (
+                      <img 
+                        src={getProxyImageUrl(printSlipTarget.photo)} 
+                        alt={printSlipTarget.fullName} 
+                        className="w-24 h-24 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    <div className="mt-2.5">
+                      <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-wider truncate max-w-[130px]">{printSlipTarget.fullName}</h3>
+                      <p className="text-[8px] text-slate-400 font-mono uppercase tracking-wider mt-0.5">Primary Registrant</p>
+                    </div>
+                  </div>
+
+                  {/* Right Columns - Info Fields */}
+                  <div className="col-span-2 space-y-2.5 text-xs text-slate-700">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Business/Brand:</span>
+                      <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
+                    </div>
+                    
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Stand Code:</span>
+                      <span className="font-mono text-emerald-700 font-black text-[11px]">STAND {printSlipTarget.standNumber}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Category Segment:</span>
+                      <span className="font-bold text-slate-800">{printSlipTarget.category}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Cell Number:</span>
+                      <span className="font-mono text-slate-800 font-semibold">{printSlipTarget.phone}</span>
+                    </div>
+
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Audit Match:</span>
+                      <span className={`font-mono text-[9px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {printSlipTarget.verificationStatus === "verified" ? "★ APPROVED & SEALED" : "★ PENDING AUDIT"}
+                      </span>
+                    </div>
+                  </div>
+                </div>xt-3xl uppercase border border-slate-300`}>
                         {printSlipTarget.businessName.slice(0, 2)}
                       </div>
                     ) : (
