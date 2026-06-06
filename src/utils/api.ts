@@ -94,7 +94,7 @@ async function isHtmlResponse(response: Response): Promise<{ isHtml: boolean; te
 }
 
 // dynamic API endpoint resolver for CORS environments (e.g. Netlify)
-function getApiUrl(path: string): string {
+export function getApiUrl(path: string): string {
   const savedUrl = localStorage.getItem("campmark_server_url");
   if (savedUrl) {
     const cleanUrl = savedUrl.replace(/\/+$/, "");
@@ -106,6 +106,17 @@ function getApiUrl(path: string): string {
     return path;
   }
   return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
+}
+
+// Proxies remote image URLs through the same-origin backend to prevent CORS security errors with canvas/html2canvas
+export function getProxyImageUrl(url?: string): string {
+  if (!url) return "";
+  if (url.startsWith("preset:")) return url;
+  if (url.startsWith("data:")) return url;
+  if (url.startsWith("http")) {
+    return getApiUrl(`/api/image-proxy?url=${encodeURIComponent(url)}`);
+  }
+  return url;
 }
 
 // --- Firestore Hardened Error Handling ---

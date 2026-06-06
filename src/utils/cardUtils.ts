@@ -1,6 +1,8 @@
 /**
  * Local Canvas rendering & PNG downloader for CampMark Operator ID Badges
  */
+import { getProxyImageUrl } from "./api";
+
 
 function getPresetGlowColors(presetName: string): [string, string] {
   const norm = (presetName || "").toLowerCase();
@@ -202,7 +204,7 @@ export function downloadIDCard(entity: {
     } else {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = photoStr;
+      img.src = getProxyImageUrl(photoStr);
       img.onload = () => {
         ctx.save();
         ctx.beginPath();
@@ -530,7 +532,7 @@ export function downloadCombinedIDCard(entity: {
     } else {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = photoStr;
+      img.src = getProxyImageUrl(photoStr);
       img.onload = () => {
         ctx.save();
         ctx.beginPath();

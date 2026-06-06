@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { api } from "../utils/api";
+import { api, getProxyImageUrl } from "../utils/api";
 import { 
   Building2, 
   Search, 
@@ -719,7 +719,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                       </div>
                     ) : (
                       <img 
-                        src={printSlipTarget.photo} 
+                        src={getProxyImageUrl(printSlipTarget.photo)} 
                         alt={printSlipTarget.fullName} 
                         className="w-24 h-24 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
                         referrerPolicy="no-referrer"
@@ -809,7 +809,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                         <div key={w.id} className="p-2.5 border border-slate-150 bg-slate-50 rounded-xl flex items-center gap-2.5 text-xs font-sans">
                           {w.photo && !w.photo.startsWith("preset:") ? (
                             <img 
-                              src={w.photo} 
+                              src={getProxyImageUrl(w.photo)} 
                               alt={w.fullName} 
                               className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200 shadow-xs" 
                               referrerPolicy="no-referrer"
@@ -930,7 +930,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                   </div>
                 ) : (
                   <img 
-                    src={printSlipTarget.photo} 
+                    src={getProxyImageUrl(printSlipTarget.photo)} 
                     alt={printSlipTarget.fullName} 
                     className="w-32 h-32 rounded-2xl object-cover shrink-0 border border-slate-300 shadow-sm animate-fade-in" 
                     referrerPolicy="no-referrer"
@@ -2564,7 +2564,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                       </div>
                     ) : (
                       <img 
-                        src={printSlipTarget.photo} 
+                        src={getProxyImageUrl(printSlipTarget.photo)} 
                         alt={printSlipTarget.fullName} 
                         className="w-24 h-24 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
                         referrerPolicy="no-referrer"
@@ -2654,13 +2654,13 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                         <div key={w.id} className="p-2.5 border border-slate-150 bg-slate-50 rounded-xl flex items-center gap-2.5 text-xs font-sans">
                           {w.photo && !w.photo.startsWith("preset:") ? (
                             <img 
-                              src={w.photo} 
+                              src={getProxyImageUrl(w.photo)} 
                               alt={w.fullName} 
                               className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200 shadow-xs" 
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald")} shadow-xs flex items-center justify-center text-[10px] font-bold text-slate-950 shrink-0 border border-slate-200`}>
+                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald")} shadow-xs flex items-center justify-center text-[10px] font-bold text-slate-955 shrink-0 border border-slate-200`}>
                               {w.fullName.slice(0, 2).toUpperCase()}
                             </div>
                           )}
@@ -2772,12 +2772,12 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               {/* Left Column - Marketer Profile Photo */}
               <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
                 {getPresetGradient(printSlipTarget.photo) ? (
-                  <div className={`w-32 h-32 rounded-2xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-md flex items-center justify-center font-bold text-slate-950 text-4xl uppercase select-none border border-slate-300`}>
+                  <div className={`w-32 h-32 rounded-2xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-md flex items-center justify-center font-bold text-slate-955 text-4xl uppercase select-none border border-slate-300`}>
                     {printSlipTarget.businessName.slice(0, 2)}
                   </div>
                 ) : (
                   <img 
-                    src={printSlipTarget.photo} 
+                    src={getProxyImageUrl(printSlipTarget.photo)} 
                     alt={printSlipTarget.fullName} 
                     className="w-32 h-32 rounded-2xl object-cover shrink-0 border border-slate-300 shadow-sm animate-fade-in" 
                     referrerPolicy="no-referrer"

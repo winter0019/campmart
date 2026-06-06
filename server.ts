@@ -372,6 +372,30 @@ app.post("/api/photos/:id", (req, res) => {
   return res.status(404).json({ error: "Operator registration code not found" });
 });
 
+// Image Proxy to bypass CORS issues for card printing/html2canvas screenshots
+app.get("/api/image-proxy", async (req, res) => {
+  const { url } = req.query;
+  if (!url || typeof url !== "string") {
+    return res.status(400).json({ error: "Missing url parameter" });
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Failed to fetch remote image" });
+    }
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    res.send(buffer);
+  } catch (err: any) {
+    console.error("Image proxy error for URL:", url, err);
+    res.status(500).json({ error: "Image proxy failed: " + err.message });
+  }
+});
+
 // Delete worker
 app.delete("/api/workers/:id", (req, res) => {
   const db = loadDatabase();
