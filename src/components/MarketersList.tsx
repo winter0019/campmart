@@ -1026,13 +1026,13 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                     <div key={w.id} className="p-3 border border-slate-200 bg-slate-50 rounded-2xl flex items-center gap-3 text-xs font-sans">
                       {w.photo && !w.photo.startsWith("preset:") ? (
                         <img 
-                          src={w.photo} 
+                          src={getProxyImageUrl(w.photo)} 
                           alt={w.fullName} 
                           className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-300 shadow-xs" 
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald") || "from-teal-400 to-emerald-500"} shadow-xs flex items-center justify-center text-xs font-bold text-slate-950 shrink-0 border border-slate-300`}>
+                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${getPresetGradient(w.photo || "preset:emerald") || "from-teal-400 to-emerald-500"} shadow-xs flex items-center justify-center text-xs font-bold text-slate-955 shrink-0 border border-slate-300`}>
                           {w.fullName.slice(0, 2).toUpperCase()}
                         </div>
                       )}
@@ -2303,7 +2303,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 <div className="relative">
                   <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 blur-sm" />
                   <img 
-                    src={printTarget.photo} 
+                    src={getProxyImageUrl(printTarget.photo)} 
                     alt={printTarget.name} 
                     className="w-[105px] h-[105px] rounded-2xl object-cover relative border border-slate-950 z-10" 
                   />
@@ -2873,7 +2873,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                     <div key={w.id} className="p-3 border border-slate-200 bg-slate-50 rounded-2xl flex items-center gap-3 text-xs font-sans">
                       {w.photo && !w.photo.startsWith("preset:") ? (
                         <img 
-                          src={w.photo} 
+                          src={getProxyImageUrl(w.photo)} 
                           alt={w.fullName} 
                           className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-300 shadow-xs" 
                           referrerPolicy="no-referrer"

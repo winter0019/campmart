@@ -326,6 +326,144 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
 
       </div>
 
+      {/* Category Distribution Deep-Dive Analysis Section */}
+      <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 md:p-8 flex flex-col space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/60 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-950/80 text-indigo-400 border border-indigo-500/15 rounded-2xl">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-slate-100 tracking-tight">Business Category Market Distribution</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Demographics and density analysis of registered marketers by trade categories.</p>
+            </div>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <span className="font-mono text-xs font-semibold text-indigo-400 bg-indigo-950/50 border border-indigo-500/10 px-3 py-1 rounded-full uppercase tracking-wider select-none">
+              {categoryData.length} Active Segments
+            </span>
+          </div>
+        </div>
+
+        {categoryData.length === 0 ? (
+          <div className="py-16 text-center text-slate-600 border border-dashed border-slate-800 rounded-2xl text-xs font-sans">
+            No marketer categories registered. Create or onboard standard vendors to generate demographics.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left: Recharts category bar chart representation (Vertical layout for legible long names) */}
+            <div className="lg:col-span-7 h-[320px] flex flex-col justify-between">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-mono font-bold tracking-wider uppercase">Live Density Chart</span>
+                <span className="text-[10px] text-slate-500 font-mono font-bold tracking-wider uppercase text-slate-400">Total Registered: {categoryData.reduce((acc, c) => acc + c.value, 0)} Stalls</span>
+              </div>
+              <div className="flex-1 w-full text-xs min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={categoryData} 
+                    layout="vertical" 
+                    margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                  >
+                    <XAxis 
+                      type="number" 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                      allowDecimals={false} 
+                    />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      stroke="#94a3b8" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false}
+                      width={140} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "#0f172a", 
+                        borderColor: "#1e293b", 
+                        borderRadius: "12px", 
+                        color: "#f8fafc",
+                        fontSize: "11px",
+                        fontFamily: "sans-serif"
+                      }}
+                      cursor={{ fill: "rgba(30, 41, 59, 0.4)" }}
+                    />
+                    <Bar 
+                      dataKey="value" 
+                      name="Registered Stalls" 
+                      fill="#3b82f6" 
+                      radius={[0, 6, 6, 0]} 
+                      barSize={16}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Right: Detailed breakdown grid cards */}
+            <div className="lg:col-span-5 flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="text-[10px] text-slate-500 font-mono font-bold tracking-wider uppercase mb-1 flex items-center justify-between">
+                <span>Category Breakdown</span>
+                <span>Portion Share</span>
+              </div>
+              
+              {categoryData.map((item, index) => {
+                const totalStandsCount = categoryData.reduce((acc, c) => acc + c.value, 0);
+                const percentage = totalStandsCount > 0 ? Math.round((item.value / totalStandsCount) * 100) : 0;
+                const catColor = COLORS[index % COLORS.length];
+
+                return (
+                  <div 
+                    key={item.name} 
+                    className="p-3 bg-slate-950/45 border border-slate-800/40 rounded-2xl flex items-center justify-between gap-4 transition-all hover:border-slate-800"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span 
+                        className="w-3.5 h-3.5 rounded-xl shrink-0 shadow-lg border border-white/5" 
+                        style={{ backgroundColor: catColor }} 
+                      />
+                      <div className="min-w-0">
+                        <span className="text-slate-200 text-xs font-bold font-sans tracking-tight block truncate">
+                          {item.name}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {item.value} {item.value === 1 ? 'registered booth' : 'registered booths'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <span className="text-xs font-extrabold text-slate-100 font-mono tracking-tight block">
+                        {percentage}%
+                      </span>
+                      <div className="w-16 bg-slate-850 h-1.5 rounded-full overflow-hidden mt-1 ml-auto border border-slate-805">
+                        <div 
+                          className="h-full rounded-full" 
+                          style={{ 
+                            backgroundColor: catColor,
+                            width: `${percentage}%`
+                          }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        )}
+      </div>
+
       {/* Real-time Validation Action Log */}
       <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 md:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-4 mb-5">
