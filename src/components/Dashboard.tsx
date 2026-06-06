@@ -12,7 +12,8 @@ import {
   Users, 
   ShieldAlert, 
   RotateCcw,
-  Coins
+  Coins,
+  Search
 } from "lucide-react";
 import { 
   ResponsiveContainer, 
@@ -49,6 +50,16 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [dashboardSearch, setDashboardSearch] = useState("");
+
+  const filteredMarketersForDashboard = marketers.filter((m) => {
+    return (
+      m.fullName.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+      m.businessName.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+      m.standNumber.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+      m.category.toLowerCase().includes(dashboardSearch.toLowerCase())
+    );
+  });
 
   // Fetch stats from backend
   const fetchStats = async () => {
@@ -460,6 +471,115 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
               })}
             </div>
 
+          </div>
+        )}
+      </div>
+
+      {/* Registered Marketers & Stands Registry */}
+      <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 md:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/60 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-950/80 text-emerald-400 border border-emerald-500/15 rounded-2xl">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-slate-100 tracking-tight">Registered Marketers & Stands Registry</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">Quick search and review of all registered market operators and active stands.</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center">
+            {/* Search Input */}
+            <div className="relative flex-1 sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search name, category, stand..."
+                value={dashboardSearch}
+                onChange={(e) => setDashboardSearch(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs py-2 pl-9 pr-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder:text-slate-600 font-medium"
+              />
+            </div>
+            
+            {/* Direct navigation helper */}
+            <button
+              onClick={() => onNavigate("marketers")}
+              className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 shrink-0 animate-pulse hover:animate-none"
+            >
+              <span>Manage Directory &rarr;</span>
+            </button>
+          </div>
+        </div>
+
+        {filteredMarketersForDashboard.length === 0 ? (
+          <div className="py-12 text-center text-slate-600 border border-dashed border-slate-800 rounded-2xl text-xs">
+            {marketers.length === 0 
+              ? "No marketers registered in this session. Go to the 'Register Stand' panel to register one."
+              : "No search results match your criteria."
+            }
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-800/80 bg-slate-950/20 custom-scrollbar">
+            <table className="w-full text-left font-sans border-collapse text-xs min-w-[700px]">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950/60 text-[10px] font-mono tracking-wider text-slate-400 uppercase select-none">
+                  <th className="py-3 px-4 font-semibold">Exhibitor / Business</th>
+                  <th className="py-3 px-4 font-semibold">Stand No</th>
+                  <th className="py-3 px-4 font-semibold">Trade Category</th>
+                  <th className="py-3 px-4 font-semibold">Contact</th>
+                  <th className="py-3 px-4 font-semibold">Verification</th>
+                  <th className="py-3 px-4 font-semibold">Amt Paid</th>
+                  <th className="py-3 px-4 font-semibold text-right">Registered Staff</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/70">
+                {filteredMarketersForDashboard.map((m) => {
+                  let badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                  if (m.verificationStatus === "verified") {
+                    badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                  } else if (m.verificationStatus === "review") {
+                    badgeColor = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                  }
+
+                  return (
+                    <tr key={m.id} className="hover:bg-slate-900/45 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 font-bold uppercase flex items-center justify-center shrink-0">
+                            {m.businessName.slice(0, 2)}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-200 block truncate max-w-[180px]">{m.businessName}</span>
+                            <span className="text-[10px] text-slate-500 block truncate max-w-[185px]">{m.fullName}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-mono font-bold bg-slate-800 text-slate-200 border border-slate-705 rounded-md py-0.5 px-2 text-[10.5px]">
+                          {m.standNumber}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-300 font-medium">{m.category}</td>
+                      <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">{m.phone}</td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center gap-1.5 py-0.5 px-2 border rounded-md font-medium text-[9.5px] ${badgeColor}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${m.verificationStatus === 'verified' ? 'bg-emerald-400 animate-pulse' : m.verificationStatus === 'review' ? 'bg-rose-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
+                          {m.verificationStatus === "verified" ? "Verified" : m.verificationStatus === "review" ? "In-Review" : "Pending Audit"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-200">
+                        ₦{(m.amountPaid || 0).toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <span className="inline-flex items-center justify-center bg-slate-800 border border-slate-700 text-slate-300 rounded-full h-5 min-w-5 px-1.5 font-bold font-mono text-[10px]">
+                          {(m.workers || []).length}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
