@@ -13,14 +13,58 @@ import {
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase";
 
+// Promise timeout helper to prevent Firestore SDK from hanging indefinitely on network/proxy blocks
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 4000, context: string = "Operation"): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${context} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+// Drops fields that are undefined or non-serializable to prevent setDoc from throwing SDK errors
+function cleanFirestorePayload<T extends Record<string, any>>(obj: T): T {
+  const result = { ...obj };
+  Object.keys(result).forEach(key => {
+    if (result[key] === undefined) {
+      delete result[key];
+    }
+  });
+  return result;
+}
+
 // Helper function to upload photos to Firebase Storage if they are base64
-async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | undefined): Promise<string | undefined> {
-  if (!photo) return photo;
+async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | undefined): Promise<string | null> {
+  if (!photo) return null;
   if (photo.startsWith("data:image")) {
     try {
+      const match = photo.match(/^data:(image\/[a-zA-Z+.-]+);base64,/);
+      const mimeType = match ? match[1] : "image/jpeg";
       const storageRef = ref(storage, `gallery/${entityId}`);
-      await uploadString(storageRef, photo, "data_url");
-      const downloadURL = await getDownloadURL(storageRef);
+      
+      // Perform upload with 6000ms timeout
+      await withTimeout(
+        uploadString(storageRef, photo, "data_url", { contentType: mimeType }),
+        6000,
+        "Storage string upload"
+      );
+      
+      const downloadURL = await withTimeout(
+        getDownloadURL(storageRef),
+        4000,
+        "Storage download URL retrieval"
+      );
+      
       console.log(`Successfully uploaded photo to storage for ${entityId}: ${downloadURL}`);
       return downloadURL;
     } catch (err) {
@@ -228,36 +272,81 @@ export const api = {
 
   // 2. Fetch Stalls (Marketers)
   async getMarketers(): Promise<Marketer[]> {
+    let firestoreList: Marketer[] = [];
+    let firestoreFailed = false;
+
     try {
-      // Prioritize Firestore live connection
+      // Fetch with timeout to guarantee it never hangs the UI
       const marketersRef = collection(db, "marketers");
       const q = query(marketersRef);
-      const querySnapshot = await getDocs(q);
-      const marketersList = querySnapshot.docs.map(docSnap => docSnap.data() as Marketer);
-      
-      // Keep local DB cached in sync
-      const localDB = loadLocalDB();
-      localDB.marketers = marketersList;
-      saveLocalDB(localDB);
-
-      return marketersList;
+      const querySnapshot = await withTimeout(getDocs(q), 3000, "getMarketers Firestore");
+      firestoreList = querySnapshot.docs.map(docSnap => docSnap.data() as Marketer);
     } catch (e) {
-      console.warn("Falling back to local marketers cached cache data", e);
-      try {
-        const response = await fetch(getApiUrl("/api/marketers"));
-        const { isHtml, text } = await isHtmlResponse(response);
-        if (!isHtml && response.ok) {
-          const fetchedMarketers = JSON.parse(text);
-          const localDB = loadLocalDB();
-          localDB.marketers = fetchedMarketers;
-          saveLocalDB(localDB);
-          return fetchedMarketers;
-        }
-      } catch (apiErr) {
-        console.warn("Proxy and Firestore failed. Loading from localStorage.", apiErr);
-      }
-      return loadLocalDB().marketers;
+      console.warn("Firestore fetch marketers failed or timed out. Falling back to backend/cache:", e);
+      firestoreFailed = true;
     }
+
+    // Try reading from Express backend JSON database
+    let expressList: Marketer[] = [];
+    try {
+      const response = await fetch(getApiUrl("/api/marketers"));
+      const { isHtml, text } = await isHtmlResponse(response);
+      if (!isHtml && response.ok) {
+        expressList = JSON.parse(text);
+      }
+    } catch (apiErr) {
+      console.warn("Express backend marketers fetch failed:", apiErr);
+    }
+
+    // Merge databases: Prioritize Firestore data, then Express, then LocalStorage fallback cache
+    const mergedMap = new Map<string, Marketer>();
+
+    // Load LocalStorage first
+    const dbLocal = loadLocalDB();
+    if (Array.isArray(dbLocal.marketers)) {
+      dbLocal.marketers.forEach(m => {
+        if (m && m.id) mergedMap.set(m.id, m);
+      });
+    }
+
+    // Overlay Express backend
+    expressList.forEach(m => {
+      if (m && m.id) mergedMap.set(m.id, m);
+    });
+
+    // Overlay Firestore live records (highest priority truth)
+    firestoreList.forEach(m => {
+      if (m && m.id) mergedMap.set(m.id, m);
+    });
+
+    const mergedList = Array.from(mergedMap.values());
+
+    // Auto-heal / synchronize the databases in the background!
+    // 1. If Firestore-query is clean and successful (not failed/timed out), but lacks any marketers
+    // that are registered on local/Express, upload those missing marketers to Firestore in the background.
+    if (!firestoreFailed) {
+      const missingInFirestore = mergedList.filter(m => !firestoreList.some(fm => fm.id === m.id));
+      missingInFirestore.forEach(async (m) => {
+        try {
+          console.log(`Self-healing: Synchronizing missing marketer "${m.businessName}" up to Firestore...`);
+          const docRef = doc(db, "marketers", m.id);
+          const cleanM = cleanFirestorePayload({
+            ...m,
+            photo: m.photo || null,
+            description: m.description || "No description provided."
+          });
+          await withTimeout(setDoc(docRef, cleanM), 2500, `Heal marketer ${m.id}`);
+        } catch (e) {
+          console.warn(`Failed background sync up of "${m.businessName}":`, e);
+        }
+      });
+    }
+
+    // 2. Keep the local cache up to date
+    dbLocal.marketers = mergedList;
+    saveLocalDB(dbLocal);
+
+    return mergedList;
   },
 
   // 3. Register Stall
@@ -281,7 +370,7 @@ export const api = {
       standNumber: payload.standNumber,
       category: payload.category,
       description: payload.description || "No description provided.",
-      photo: uploadedPhoto,
+      photo: uploadedPhoto || null,
       createdAt: new Date().toISOString(),
       workers: [],
       verificationStatus: "pending",
@@ -291,7 +380,8 @@ export const api = {
     // Try committing to Firestore first
     try {
       const docRef = doc(db, "marketers", newMarketer.id);
-      await setDoc(docRef, newMarketer);
+      const cleanM = cleanFirestorePayload(newMarketer);
+      await withTimeout(setDoc(docRef, cleanM), 4500, "registerMarketer Firestore write");
 
       // Log success activity to Firestore
       const newActivity: LiveActivity = {
@@ -301,7 +391,7 @@ export const api = {
         message: `Registered new campaign marketer: ${payload.businessName}`,
         details: `Managed by ${payload.fullName} at Stand ${payload.standNumber}.`
       };
-      await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      await withTimeout(setDoc(doc(db, "activities", newActivity.id), cleanFirestorePayload(newActivity)), 3000, "registerMarketer activity write");
     } catch (e: any) {
       console.warn("Failed to write marketer to Firestore. Using fallback static local registry.", e);
       // Fallback local persistence
@@ -316,11 +406,11 @@ export const api = {
     }
 
     try {
-      // Attempt backend endpoint trigger if available
+      // Attempt backend endpoint trigger with complete constructed object to sync IDs perfectly!
       await fetch(getApiUrl("/api/marketers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(newMarketer)
       });
     } catch (err) {
       // Graceful ignore
@@ -476,7 +566,7 @@ export const api = {
       phone: payload.phone,
       role: payload.role,
       marketerId,
-      photo: uploadedPhoto,
+      photo: uploadedPhoto || null,
       createdAt: new Date().toISOString()
     };
 
@@ -588,10 +678,10 @@ export const api = {
     try {
       const currentMarketers = await this.getMarketers();
       
-      // Fetch recent status logs from Firestore
+      // Fetch recent status logs from Firestore (with timeout to prevent freezing)
       const activitiesRef = collection(db, "activities");
       const q = query(activitiesRef, orderBy("timestamp", "desc"), limit(20));
-      const snapshot = await getDocs(q);
+      const snapshot = await withTimeout(getDocs(q), 3000, "getStats activities fetch");
       const recentActivities = snapshot.docs.map(docSnap => docSnap.data() as LiveActivity);
 
       let totalWorkers = 0;
@@ -615,6 +705,7 @@ export const api = {
         totalMarketers: currentMarketers.length,
         totalWorkers,
         activeStands: currentMarketers.length,
+        totalRevenue,
         categoryDist,
         recentActivities: recentActivities.length > 0 ? recentActivities : loadLocalDB().activities.slice(0, 10)
       } as any;
@@ -644,6 +735,7 @@ export const api = {
         totalMarketers: currentMarketers.length,
         totalWorkers,
         activeStands: currentMarketers.length,
+        totalRevenue,
         categoryDist,
         recentActivities: dbLocal.activities.slice(0, 7)
       } as any;

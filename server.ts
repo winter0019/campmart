@@ -181,43 +181,55 @@ app.get("/api/marketers", (req, res) => {
 });
 
 app.post("/api/marketers", (req, res) => {
-  const { fullName, businessName, phone, standNumber, category, description, photo } = req.body;
+  const { id, fullName, businessName, phone, standNumber, category, description, photo, createdAt, workers, verificationStatus, amountPaid } = req.body;
   if (!fullName || !businessName || !phone || !standNumber || !category) {
     return res.status(400).json({ error: "Required fields missing (fullName, businessName, phone, standNumber, category)" });
   }
 
   const db = loadDatabase();
   
-  const duplicatedStand = db.marketers.find(m => m.standNumber.trim() === standNumber.trim());
+  // Check if this marketer already exists by ID
+  const existingIndex = id ? db.marketers.findIndex(m => m.id === id) : -1;
+
+  // Check if stand number is occupied by another marketer
+  const duplicatedStand = db.marketers.find(m => m.standNumber.trim() === standNumber.trim() && m.id !== id);
   if (duplicatedStand) {
     return res.status(400).json({ error: `Stand number is already occupied by ${duplicatedStand.businessName}. Please choose another stand.` });
   }
 
   const newMarketer: Marketer = {
-    id: `mkt-${Date.now()}`,
+    id: id || `mkt-${Date.now()}`,
     fullName,
     businessName,
     phone,
     standNumber,
     category,
     description: description || "No description provided.",
-    photo,
-    createdAt: new Date().toISOString(),
-    workers: [],
-    verificationStatus: "pending",
-    amountPaid: 0
+    photo: photo || undefined,
+    createdAt: createdAt || new Date().toISOString(),
+    workers: workers || [],
+    verificationStatus: verificationStatus || "pending",
+    amountPaid: amountPaid || 0
   };
 
-  db.marketers.push(newMarketer);
-  saveDatabase(db);
-  
-  logActivity(
-    "marketer_registered",
-    `Registered new campaign marketer: ${businessName}`,
-    `Managed by ${fullName} at Stand ${standNumber}.`
-  );
+  if (existingIndex !== -1) {
+    db.marketers[existingIndex] = newMarketer;
+    logActivity(
+      "marketer_registered",
+      `Updated campaign marketer profile: ${businessName}`,
+      `Managed by ${fullName} at Stand ${standNumber}.`
+    );
+  } else {
+    db.marketers.push(newMarketer);
+    logActivity(
+      "marketer_registered",
+      `Registered new campaign marketer: ${businessName}`,
+      `Managed by ${fullName} at Stand ${standNumber}.`
+    );
+  }
 
-  res.status(201).json(newMarketer);
+  saveDatabase(db);
+  res.status(existingIndex !== -1 ? 200 : 201).json(newMarketer);
 });
 
 // Get individual marketer details
