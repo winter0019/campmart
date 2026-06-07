@@ -125,44 +125,38 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      const userEmail = user.email?.toLowerCase() || "";
-      let role: "admin" | "marketer" = "marketer";
+      const role: "admin" | "marketer" = "marketer";
       let fullName = user.displayName || "Google User";
-      let usernamePart = user.email?.split("@")[0] || "google_user";
+      const usernamePart = user.email?.split("@")[0] || "google_user";
       let userId = user.uid;
 
-      if (
-        userEmail === "dangalan20@gmail.com" || 
-        userEmail.includes("admin") || 
-        userEmail === "evans.okwor@gmail.com" ||
-        userEmail === "evans001@gmail.com" ||
-        userEmail.substring(0, 5) === "admin"
-      ) {
-        role = "admin";
-        if (userEmail === "dangalan20@gmail.com") {
-          fullName = "Idris Dangalan";
-        } else if (userEmail.includes("evans")) {
-          fullName = "Mr. Evans Okwor";
+      // Look up registered marketers
+      try {
+        const marketers = await api.getMarketers();
+        const found = marketers.find(m => 
+          m.fullName.toLowerCase() === fullName.toLowerCase() || 
+          m.businessName.toLowerCase() === fullName.toLowerCase()
+        );
+        if (found) {
+          fullName = found.fullName;
+          userId = found.id;
+        } else {
+          // Dynamic auto-registration for the Gmail logged-in user to guarantee they have their dashboard
+          const uniqueStandNum = `G-${user.uid.substring(0, 4).toUpperCase()}`;
+          const newMkt = await api.registerMarketer({
+            fullName: user.displayName || "Google User",
+            businessName: `${user.displayName || "Google"}'s Merchant Stand`,
+            phone: user.phoneNumber || "080-GOOGLE",
+            standNumber: uniqueStandNum,
+            category: "General",
+            description: `Camp stand registered via Google account (${user.email || "N/A"}).`,
+            photo: user.photoURL || "preset:emerald"
+          });
+          userId = newMkt.id;
+          fullName = newMkt.fullName;
         }
-      } else {
-        // Look up registered marketers
-        try {
-          const marketers = await api.getMarketers();
-          const found = marketers.find(m => 
-            m.fullName.toLowerCase() === fullName.toLowerCase() || 
-            m.businessName.toLowerCase() === fullName.toLowerCase()
-          );
-          if (found) {
-            role = "marketer";
-            fullName = found.fullName;
-            userId = found.id;
-          } else {
-            // Unregistered user logs in as admin for test convenience
-            role = "admin";
-          }
-        } catch (e) {
-          role = "admin";
-        }
+      } catch (e) {
+        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
       }
 
       onLoginSuccess({
