@@ -171,10 +171,16 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         role
       }, `google-oauth-token-${user.uid}`);
     } catch (err: any) {
-      console.error("Google login failed", err);
-      // Route any Google login popup failure (blocked popups, auth/internal-error, unconfigured project, or unauthorized domain) 
-      // directly to the elegant Firebase oauth limitation display that provides copyable domains and simulation links.
-      setError("FIREBASE_OAUTH_RESTRICTION");
+      if (err?.code === "auth/popup-closed-by-user" || err?.message?.includes("popup-closed-by-user") ||
+          err?.code === "auth/cancelled-popup-request" || err?.message?.includes("cancelled-popup-request")) {
+        console.warn("Google login popup closed or blocked by browser iframe policy:", err.message);
+        setError("FIREBASE_POPUP_CLOSED");
+      } else {
+        console.error("Google login failed", err);
+        // Route any Google login popup failure (blocked popups, auth/internal-error, unconfigured project, or unauthorized domain) 
+        // directly to the elegant Firebase oauth limitation display that provides copyable domains and simulation links.
+        setError("FIREBASE_OAUTH_RESTRICTION");
+      }
     } finally {
       setLoading(false);
     }
@@ -640,6 +646,36 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                         setError(null);
                       }}
                       className="w-full py-2.5 bg-amber-550 hover:bg-amber-450 text-slate-950 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all"
+                    >
+                      Bypass & Continue with Gmail Simulation
+                    </button>
+                  </div>
+                </div>
+              ) : error === "FIREBASE_POPUP_CLOSED" ? (
+                <div className="mb-4 p-4 bg-amber-950/40 border border-amber-500/20 rounded-xl space-y-3 text-xs text-amber-300">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldAlert className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-slate-250 text-[13px] mb-1">Google Sign-In Cancelled / Closed</h4>
+                      <p className="leading-relaxed text-[11px] text-slate-350">
+                        The Google Authentication popup window was closed, cancelled or blocked by the browser's sandbox/iframe protection policy.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2.5 border-t border-amber-500/10 flex flex-col gap-2">
+                    <p className="text-[10px] text-slate-400 font-sans">
+                      No worries! Bypass the block and proceed instantly with a simulated Google login Session:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSimEmail("dangalan20@gmail.com");
+                        setSimName("Idris Dangalan");
+                        setShowSimulator(true);
+                        setError(null);
+                      }}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all cursor-pointer"
                     >
                       Bypass & Continue with Gmail Simulation
                     </button>
