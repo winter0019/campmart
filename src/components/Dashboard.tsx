@@ -33,24 +33,43 @@ const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#a855f7", "#ec4899", "#14b8a6"
 
 interface DashboardProps {
   marketers: Marketer[];
+  activities: LiveActivity[];
   onRefreshAllData: () => Promise<void>;
   onNavigate: (tab: string) => void;
 }
 
-export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: DashboardProps) {
-  const [stats, setStats] = useState<{
-    totalMarketers: number;
-    totalWorkers: number;
-    activeStands: number;
-    totalRevenue?: number;
-    categoryDist: { name: string; value: number }[];
-    recentActivities: LiveActivity[];
-  } | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function Dashboard({ marketers, activities, onRefreshAllData, onNavigate }: DashboardProps) {
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [dashboardSearch, setDashboardSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Derive stats reactively
+  const totalMarketers = marketers.length;
+  let totalWorkers = 0;
+  let totalRevenue = 0;
+  const categories: { [key: string]: number } = {};
+
+  marketers.forEach((m) => {
+    totalWorkers += (m.workers || []).length;
+    if (m.category) {
+      categories[m.category] = (categories[m.category] || 0) + 1;
+    }
+    totalRevenue += (m.amountPaid || 0);
+  });
+
+  const categoryDist = Object.keys(categories).map((k) => ({
+    name: k,
+    value: categories[k]
+  }));
+
+  const stats = {
+    totalMarketers,
+    totalWorkers,
+    activeStands: totalMarketers,
+    totalRevenue,
+    categoryDist,
+    recentActivities: activities
+  };
 
   const filteredMarketersForDashboard = marketers.filter((m) => {
     return (
@@ -61,46 +80,20 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
     );
   });
 
-  // Fetch stats from backend
-  const fetchStats = async () => {
-    try {
-      const data = await api.getStats(marketers);
-      setStats(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to contact database statistics service.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, [marketers]);
-
   const handleSimulateAction = async () => {
     setSimulationLoading(true);
     try {
       await api.simulateAction();
-      await fetchStats();
-      await onRefreshAllData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Action simulation error:", err);
+      setError(err.message || "Failed to simulate transaction on cloud server.");
     } finally {
       setSimulationLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-950 text-slate-400">
-        <Activity className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
-        <span className="text-sm">Synthesizing live metrics dashboard...</span>
-      </div>
-    );
-  }
-
   // Prep charts
-  const categoryData = stats?.categoryDist || [];
+  const categoryData = stats.categoryDist || [];
   
   // Format bar chart data (Workers per Marketer)
   const workerChartData = marketers.map(m => ({
@@ -130,7 +123,7 @@ export default function Dashboard({ marketers, onRefreshAllData, onNavigate }: D
             </button>
           )}
           <button
-            onClick={fetchStats}
+            onClick={onRefreshAllData}
             title="Refresh database state"
             className="p-2 bg-slate-905 border border-slate-800 hover:border-slate-700 hover:bg-slate-900 text-slate-400 hover:text-slate-200 rounded-xl cursor-pointer transition-all"
           >

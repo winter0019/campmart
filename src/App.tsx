@@ -6,7 +6,9 @@ import MarketersList from "./components/MarketersList";
 import RegisterForm from "./components/RegisterForm";
 import IDCardGenerator from "./components/IDCardGenerator";
 import QRScanner from "./components/QRScanner";
-import { AuthState, Marketer } from "./types";
+import { AuthState, Marketer, LiveActivity } from "./types";
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { db } from "./firebase";
 import { Clock, RefreshCw, KeyRound, Signal, Server, Globe, Menu } from "lucide-react";
 import { api } from "./utils/api";
 
@@ -43,10 +45,11 @@ export default function App() {
   const [marketers, setMarketers] = useState<Marketer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activities, setActivities] = useState<LiveActivity[]>([]);
 
   // Sync clock trigger
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1005);
     return () => clearInterval(timer);
   }, []);
 
@@ -63,23 +66,51 @@ export default function App() {
     }
   };
 
-  const syncMarketersBackground = async () => {
-    try {
-      const data = await api.getMarketers();
-      setMarketers(data);
-    } catch (err) {
-      console.warn("Background auto-synchronization failed:", err);
-    }
-  };
-
+  // 1. Subscribe to marketers collection in real-time
   useEffect(() => {
-    if (auth.token) {
-      fetchMarketers();
-      // Auto-poll database updates every 15 seconds so registrations made on separate
-      // devices appear on the admin dashboard automatically in real-time
-      const interval = setInterval(syncMarketersBackground, 15000);
-      return () => clearInterval(interval);
-    }
+    if (!auth.token) return;
+
+    setLoading(true);
+    const unsubscribe = onSnapshot(
+      collection(db, "marketers"),
+      (snapshot) => {
+        const liveMarketers = snapshot.docs.map((doc) => doc.data() as Marketer);
+        setMarketers(liveMarketers);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Firestore marketers subscription error:", err);
+        setError("Failed to stream real-time marketers. Accessing offline fallback cache.");
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [auth.token]);
+
+  // 2. Subscribe to activities collection in real-time
+  useEffect(() => {
+    if (!auth.token) return;
+
+    const q = query(
+      collection(db, "activities"),
+      orderBy("timestamp", "desc"),
+      limit(25)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const liveActivities = snapshot.docs.map((doc) => doc.data() as LiveActivity);
+        setActivities(liveActivities);
+      },
+      (err) => {
+        console.error("Firestore activities subscription error:", err);
+      }
+    );
+
+    return () => unsubscribe();
   }, [auth.token]);
 
   const handleLoginSuccess = (user: any, token: string) => {
@@ -176,6 +207,7 @@ export default function App() {
           {activeTab === "dashboard" && auth.user?.role === "admin" && (
             <Dashboard 
               marketers={marketers} 
+              activities={activities}
               onRefreshAllData={fetchMarketers} 
               onNavigate={handleNavigate}
             />

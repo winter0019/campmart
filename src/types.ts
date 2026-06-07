@@ -33,7 +33,7 @@ export interface DashboardStats {
 
 export interface LiveActivity {
   id: string;
-  type: 'marketer_registered' | 'worker_added' | 'worker_removed' | 'marketer_deleted';
+  type: string;
   timestamp: string;
   message: string;
   details?: string;

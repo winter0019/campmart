@@ -32,10 +32,6 @@ export const db = initializeFirestore(
   {
     experimentalForceLongPolling: true,
     useFetchStreams: false,
-
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
   } as any,
   (firebaseConfig as any).firestoreDatabaseId || undefined
 );
