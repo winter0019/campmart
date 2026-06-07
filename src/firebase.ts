@@ -1,15 +1,10 @@
 import { initializeApp } from "firebase/app";
 
-import { 
-  getAuth,
-  setPersistence,
-  browserLocalPersistence
-} from "firebase/auth";
-
 import {
-  initializeFirestore
+  initializeFirestore,
 } from "firebase/firestore";
 
+import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 import firebaseConfig from "../firebase-applet-config.json";
@@ -17,12 +12,8 @@ import firebaseConfig from "../firebase-applet-config.json";
 const app = initializeApp(firebaseConfig);
 
 /**
- * FIRESTORE
- * Important fixes:
- * - experimentalForceLongPolling
- * - useFetchStreams: false
- * - persistent cache
- * - multiple tab support
+ * SIMPLE FIRESTORE CONFIG
+ * Stable across Chrome, Edge, Firefox, mobile with Database ID support
  */
 
 export const db = initializeFirestore(
@@ -34,20 +25,7 @@ export const db = initializeFirestore(
   (firebaseConfig as any).firestoreDatabaseId || undefined
 );
 
-/**
- * AUTH
- */
-
 export const auth = getAuth(app);
-
-setPersistence(auth, browserLocalPersistence)
-  .catch((error) => {
-    console.error("Auth persistence error:", error);
-  });
-
-/**
- * STORAGE
- */
 
 export const storage = getStorage(app);
 

@@ -81,7 +81,7 @@ export default function App() {
       },
       (err) => {
         console.error("Firestore marketers subscription error:", err);
-        setError("Failed to stream real-time marketers. Accessing offline fallback cache.");
+        setError("Failed to stream real-time marketers. Please check your network connection.");
         setLoading(false);
       }
     );
