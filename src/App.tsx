@@ -9,7 +9,7 @@ import QRScanner from "./components/QRScanner";
 import { AuthState, Marketer, LiveActivity } from "./types";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "./firebase";
-import { Clock, RefreshCw, KeyRound, Signal, Server, Globe, Menu } from "lucide-react";
+import { Clock, RefreshCw, Server, Menu } from "lucide-react";
 import { api } from "./utils/api";
 
 export default function App() {
@@ -37,6 +37,7 @@ export default function App() {
     } catch (e) {}
     return "dashboard";
   });
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -53,6 +54,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Secure Backend Syncing Strategy (Single Source of Truth)
   const fetchMarketers = async () => {
     try {
       setLoading(true);
@@ -66,11 +68,14 @@ export default function App() {
     }
   };
 
-  // 1. Subscribe to marketers collection in real-time
+  // 1. Initial Load and Real-time Synchronizer Setup from Cloud Run Node
   useEffect(() => {
     if (!auth.token) return;
+    
+    // Initial fetch from backend to populate state safely
+    fetchMarketers();
 
-    setLoading(true);
+    // OPTIONAL: Keep direct real-time safety fallback streaming hook active
     const unsubscribe = onSnapshot(
       collection(db, "marketers"),
       (snapshot) => {
@@ -81,7 +86,7 @@ export default function App() {
       },
       (err) => {
         console.error("Firestore marketers subscription error:", err);
-        setError("Failed to stream real-time marketers. Please check your network connection.");
+        setError("Failed to stream real-time marketers. Falling back to API.");
         setLoading(false);
       }
     );
@@ -121,14 +126,13 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeAttr?.("campmark_user"); // fallback check
+    // FIX: Standardized clean browser cleanup interface execution
     localStorage.removeItem("campmark_user");
     localStorage.removeItem("campmark_token");
     setAuth({ user: null, token: null });
     setActiveTab("dashboard");
   };
 
-  // Switch tabs
   const handleNavigate = (tab: string) => {
     setActiveTab(tab);
   };
@@ -174,9 +178,9 @@ export default function App() {
             </span>
             <div className="flex flex-col min-w-0">
               <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono tracking-widest leading-none">TACTICAL STATUS</span>
-              <span className="text-[10px] sm:text-[11px] font-bold text-slate-350 mt-1 uppercase font-mono tracking-wider flex items-center gap-1 truncate">
+              <span className="text-[10px] sm:text-[11px] font-bold mt-1 uppercase font-mono tracking-wider flex items-center gap-1 truncate">
                 <Server className="w-3.5 h-3.5 text-emerald-450 shrink-0" />
-                <span className="truncate">Live Node Online</span>
+                <span className="truncate text-slate-300">Live Node Online</span>
               </span>
             </div>
           </div>
@@ -203,6 +207,11 @@ export default function App() {
 
         {/* Tactical Panels router container */}
         <div className="flex-1 min-h-0 flex relative">
+          {error && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-950/80 border border-red-800 text-red-200 px-4 py-2 rounded-xl text-xs z-50 backdrop-blur">
+              {error}
+            </div>
+          )}
           
           {activeTab === "dashboard" && auth.user?.role === "admin" && (
             <Dashboard 
@@ -241,7 +250,6 @@ export default function App() {
           {activeTab === "qr_scanner" && auth.user?.role === "admin" && (
             <QRScanner marketers={marketers} />
           )}
-
         </div>
 
       </div>
