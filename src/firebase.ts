@@ -7,9 +7,7 @@ import {
 } from "firebase/auth";
 
 import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager
+  initializeFirestore
 } from "firebase/firestore";
 
 import { getStorage } from "firebase/storage";
