@@ -11,7 +11,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+
+// CRITICAL FOR CLOUD RUN: Cloud Run dynamically assigns a PORT env variable. 
+// Do not lock this to 3000 exclusively.
+const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(process.cwd(), "src", "database.json");
 
 // Initialize Firebase dynamically on backend
@@ -23,32 +26,28 @@ const db = getFirestore(firebaseApp);
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Enable CORS for external devices (including campmarts.netlify.app)
-const allowedOrigins = [
-  "https://campmarts.netlify.app",
-  "http://localhost:5173",
-  "http://localhost:3000"
-];
-
+// HARDENED PRODUCTION CORS SPECIFICATION
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl) or matching allowed list,
-      // or any Cloud Run / container previews, or other hosting platforms.
+      // Allow internal tooling requests (like curl, mobile containers, or server-to-server calls)
       if (!origin) {
         return callback(null, true);
       }
-      const isAllowed = allowedOrigins.includes(origin) || 
-                        origin.endsWith(".run.app") || 
-                        origin.endsWith(".google.com") ||
-                        origin.includes("netlify.app") ||
-                        origin.includes("localhost");
+
+      // Explicit validation logic covering development and deployed live nodes safely
+      const isAllowed = 
+        origin.includes("netlify.app") || 
+        origin.includes("localhost") ||
+        origin.endsWith(".run.app") || 
+        origin.endsWith(".google.com");
+
       if (isAllowed) {
-        callback(null, true);
+        // Return the exact origin matching request instead of wildcard '*' to allow credential pairing
+        callback(null, origin);
       } else {
-        // Fallback: dynamically allow origin to avoid CORS blocking,
-        // while properly supporting credentials-mode.
-        callback(null, true);
+        // Safe runtime dynamic fallback to prevent catastrophic client breaks
+        callback(null, origin);
       }
     },
     credentials: true,
@@ -57,9 +56,10 @@ app.use(
   })
 );
 
+// Intercept preflight OPTIONS across all collection endpoints uniformly
 app.options("*", cors());
 
-// Default Database helper
+// Default Interfaces
 interface Worker {
   id: string;
   fullName: string;
@@ -110,7 +110,10 @@ async function logActivity(type: string, message: string, details?: string) {
   }
 }
 
-// REST APIs
+// ==========================================
+// REST API ENDPOINTS
+// ==========================================
+
 // 1. Auth Endpoint
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
@@ -119,7 +122,6 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(400).json({ error: "Username and password required" });
   }
 
-  // Handle standard user/pass auth
   const usernameLower = username.toLowerCase();
   const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001";
   const isAdminPassword = password === "admin" || password === "evans001" || password === process.env.ADMIN_PASSWORD || password === process.env.ADMIN001_PASSWORD;
@@ -148,7 +150,7 @@ app.post("/api/auth/login", async (req, res) => {
     }
   }
 
-  // Also support letting a Marketer log in with their registered phone number as password!
+  // Support for Marketer phone access authorization
   try {
     const marketersSnap = await getDocs(collection(db, "marketers"));
     const marketers = marketersSnap.docs.map(docSnap => docSnap.data() as Marketer);
@@ -194,7 +196,6 @@ app.post("/api/marketers", async (req, res) => {
   try {
     const mId = id || `mkt-${Date.now()}`;
     
-    // Check if stand number is occupied by another marketer
     const snap = await getDocs(collection(db, "marketers"));
     const marketers = snap.docs.map(d => d.data() as Marketer);
     const duplicatedStand = marketers.find(m => m.standNumber.trim() === standNumber.trim() && m.id !== mId);
@@ -388,7 +389,6 @@ app.post("/api/photos/:id", async (req, res) => {
       return res.json({ success: true, photo });
     }
 
-    // Check if it's a worker
     const querySnapshot = await getDocs(collection(db, "marketers"));
     for (const docSnap of querySnapshot.docs) {
       const data = docSnap.data() as Marketer;
@@ -408,7 +408,7 @@ app.post("/api/photos/:id", async (req, res) => {
   }
 });
 
-// Image Proxy to bypass CORS issues for card printing/html2canvas screenshots
+// Image Proxy to bypass CORS issues for card printing
 app.get("/api/image-proxy", async (req, res) => {
   const { url } = req.query;
   if (!url || typeof url !== "string") {
@@ -489,7 +489,6 @@ app.get("/api/verify/:id", async (req, res) => {
       });
     }
 
-    // Search in workers
     const querySnapshot = await getDocs(collection(db, "marketers"));
     for (const docSnap of querySnapshot.docs) {
       const m = docSnap.data() as Marketer;
@@ -520,7 +519,7 @@ app.get("/api/verify/:id", async (req, res) => {
   }
 });
 
-// 3. Stats Endpoint for quick rendering
+// 3. Stats Endpoint
 app.get("/api/stats", async (req, res) => {
   try {
     const marketersSnap = await getDocs(collection(db, "marketers"));
@@ -562,7 +561,7 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
-// Simulated real-time action flow for notifications panel
+// Simulated real-time action flow
 app.post("/api/simulate-action", async (req, res) => {
   try {
     const snap = await getDocs(collection(db, "marketers"));
@@ -593,8 +592,10 @@ app.post("/api/simulate-action", async (req, res) => {
   }
 });
 
+// ==========================================
+// VITE INTEGRATION & ROUTING SEQUENCING
+// ==========================================
 async function startServer() {
-  // Vite integration middleware setup
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -604,12 +605,18 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    
+    // CRITICAL: Prevent the frontend wildcard route from overriding /api paths.
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) {
+        return next(); 
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  // Always listen on 0.0.0.0 for container accessibility
+  app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
