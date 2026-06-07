@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Login from "./components/Login";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "./components/NavigationSidebar";
 import Dashboard from "./components/Dashboard";
 import MarketersList from "./components/MarketersList";
 import RegisterForm from "./components/RegisterForm";
