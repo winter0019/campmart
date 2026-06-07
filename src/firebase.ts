@@ -36,7 +36,7 @@ export const db = initializeFirestore(
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager()
     })
-  },
+  } as any,
   (firebaseConfig as any).firestoreDatabaseId || undefined
 );
 
