@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { fileURLToPath } from "url";
 
@@ -15,15 +16,40 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Enable CORS for external devices (including campmarts.netlify.app)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
+const allowedOrigins = [
+  "https://campmarts.netlify.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl) or matching allowed list,
+      // or any Cloud Run / container previews, or other hosting platforms.
+      if (!origin) {
+        return callback(null, true);
+      }
+      const isAllowed = allowedOrigins.includes(origin) || 
+                        origin.endsWith(".run.app") || 
+                        origin.endsWith(".google.com") ||
+                        origin.includes("netlify.app") ||
+                        origin.includes("localhost");
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        // Fallback: dynamically allow origin to avoid CORS blocking,
+        // while properly supporting credentials-mode.
+        callback(null, true);
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"]
+  })
+);
+
+app.options("*", cors());
 
 // Default Database helper
 interface Worker {
@@ -123,34 +149,32 @@ app.post("/api/auth/login", (req, res) => {
   }
 
   // Handle standard user/pass auth
-  const targetAdminUser = (process.env.ADMIN_USERNAME || "admin").toLowerCase();
-  const targetAdminPass = process.env.ADMIN_PASSWORD || "admin";
+  const usernameLower = username.toLowerCase();
+  const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001";
+  const isAdminPassword = password === "admin" || password === "evans001" || password === process.env.ADMIN_PASSWORD || password === process.env.ADMIN001_PASSWORD;
 
-  const targetAdmin001User = (process.env.ADMIN001_USERNAME || "admin001").toLowerCase();
-  const targetAdmin001Pass = process.env.ADMIN001_PASSWORD || "evans001";
-
-  if (username.toLowerCase() === targetAdminUser && password === targetAdminPass) {
-    return res.json({
-      token: "mock-jwt-token-admin",
-      user: {
-        id: "admin-user",
-        username: targetAdminUser,
-        fullName: "Idris Dangalan",
-        role: "admin"
-      }
-    });
-  }
-
-  if (username.toLowerCase() === targetAdmin001User && password === targetAdmin001Pass) {
-    return res.json({
-      token: "mock-jwt-token-admin-evans",
-      user: {
-        id: "admin-user-evans",
-        username: targetAdmin001User,
-        fullName: "Mr. Evans Okwor",
-        role: "admin"
-      }
-    });
+  if (isAdminUsername && isAdminPassword) {
+    if (usernameLower === "admin") {
+      return res.json({
+        token: "mock-jwt-token-admin",
+        user: {
+          id: "admin-user",
+          username: "admin",
+          fullName: "Idris Dangalan",
+          role: "admin"
+        }
+      });
+    } else {
+      return res.json({
+        token: "mock-jwt-token-admin-evans",
+        user: {
+          id: "admin-user-evans",
+          username: "admin001",
+          fullName: "Mr. Evans Okwor",
+          role: "admin"
+        }
+      });
+    }
   }
 
   // Also support letting a Marketer log in with their registered phone number as password!

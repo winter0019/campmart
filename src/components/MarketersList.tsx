@@ -24,10 +24,12 @@ import {
   CheckCircle2,
   Sparkles,
   Info,
-  Printer,
-  Download,
-  Database,
-  Upload
+  Printer, 
+  Download, 
+  Database, 
+  Upload,
+  Edit3,
+  RefreshCw
 } from "lucide-react";
 import { motion } from "motion/react";
 import { downloadIDCard } from "../utils/cardUtils";
@@ -575,6 +577,95 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
   // Specific staff direct profile upload state
   const [uploadingWorkerPhotoId, setUploadingWorkerPhotoId] = useState<string | null>(null);
 
+  // States for Marketer profile editing form (used when completing or editing their profile)
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileFullName, setProfileFullName] = useState("");
+  const [profileBusinessName, setProfileBusinessName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileStandNumber, setProfileStandNumber] = useState("");
+  const [profileCategory, setProfileCategory] = useState("");
+  const [profileDescription, setProfileDescription] = useState("");
+  const [profilePhotoBase64, setProfilePhotoBase64] = useState<string | null>(null);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [profileUpdateError, setProfileUpdateError] = useState<string | null>(null);
+  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState(false);
+  const [hasAutoOpenedSetup, setHasAutoOpenedSetup] = useState(false);
+
+  React.useEffect(() => {
+    if (userRole === "marketer" && loggedInUserId) {
+      const currentMarketer = marketers.find((m) => m.id === loggedInUserId);
+      if (currentMarketer && !hasAutoOpenedSetup) {
+        // Evaluate if this profile has placeholder/generic values
+        const isIncomplete = 
+          currentMarketer.category === "General" || 
+          currentMarketer.phone === "080-GOOGLE" || 
+          currentMarketer.phone.includes("@") || 
+          currentMarketer.description.includes("registered via Google") ||
+          !currentMarketer.photo ||
+          currentMarketer.photo.startsWith("preset:");
+
+        if (isIncomplete) {
+          // Initialize editing fields
+          setProfileFullName(currentMarketer.fullName);
+          setProfileBusinessName(currentMarketer.businessName);
+          setProfilePhone(currentMarketer.phone === "080-GOOGLE" ? "" : currentMarketer.phone);
+          setProfileStandNumber(currentMarketer.standNumber);
+          setProfileCategory(currentMarketer.category);
+          setProfileDescription(currentMarketer.description.includes("registered via") ? "" : currentMarketer.description);
+          setProfilePhotoBase64(currentMarketer.photo || null);
+          setIsEditingProfile(true);
+        }
+        setHasAutoOpenedSetup(true);
+      }
+    }
+  }, [marketers, userRole, loggedInUserId, hasAutoOpenedSetup]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileFullName || !profileBusinessName || !profilePhone || !profileStandNumber || !profileCategory) {
+      setProfileUpdateError("Please fill out all required fields (*).");
+      return;
+    }
+    
+    setUpdatingProfile(true);
+    setProfileUpdateError(null);
+    setProfileUpdateSuccess(false);
+
+    try {
+      await api.updateMarketerProfile(loggedInUserId!, {
+        fullName: profileFullName,
+        businessName: profileBusinessName,
+        phone: profilePhone,
+        standNumber: profileStandNumber,
+        category: profileCategory,
+        description: profileDescription || "Registered campaign station.",
+        photo: profilePhotoBase64 || undefined
+      });
+      await onRefresh();
+      setProfileUpdateSuccess(true);
+      setTimeout(() => {
+        setProfileUpdateSuccess(false);
+        setIsEditingProfile(false);
+      }, 2000);
+    } catch (err: any) {
+      setProfileUpdateError(err.message || "Failed to update profile details.");
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
+
+  const handleProfilePhotoChange = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileUpdateError("Selected profile photo file is too large (max 2MB).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePhotoBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const categories = ["All", ...CATEGORIES];
 
   const handleWorkerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -726,6 +817,238 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
     reader.readAsDataURL(file);
   };
 
+  // Force-overlay modal popup for marketer profile completion and configuration
+  const renderProfileSetupPopup = () => {
+    if (userRole !== "marketer" || !loggedInUserId) return null;
+    const currentMarketer = marketers.find((m) => m.id === loggedInUserId);
+    if (!currentMarketer) return null;
+
+    // Detect if this registration record has placeholder items from Google Auth
+    const isGooglePlaceholder = 
+      currentMarketer.category === "General" || 
+      currentMarketer.phone === "080-GOOGLE" || 
+      currentMarketer.phone.includes("@") || 
+      currentMarketer.description.includes("registered via Google") ||
+      !currentMarketer.photo ||
+      currentMarketer.photo.startsWith("preset:");
+
+    const showModal = isEditingProfile || isGooglePlaceholder;
+    if (!showModal) return null;
+
+    const marketerPresetGrad = currentMarketer.photo && currentMarketer.photo.startsWith("preset:") 
+      ? getPresetGradient(currentMarketer.photo) 
+      : null;
+
+    return (
+      <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto print:hidden">
+        <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl relative flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+          
+          {/* Header */}
+          <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 sticky top-0 z-10 backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-400" />
+              <div>
+                <h3 className="font-extrabold text-[#00e676] text-xs uppercase tracking-widest font-mono">NYSC Camp Market Katsina</h3>
+                <h4 className="text-[10px] text-slate-350 font-bold uppercase tracking-wider">Official Exhibitor Stand & Personnel ID Registration Portal</h4>
+              </div>
+            </div>
+            
+            {/* Standard cancel button only if their profile is not placeholder (i.e., voluntary edit) */}
+            {!isGooglePlaceholder && (
+              <button
+                type="button"
+                onClick={() => setIsEditingProfile(false)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Form Content Scrolling Frame */}
+          <div className="p-6 overflow-y-auto flex-1 bg-slate-950/20 space-y-4 custom-scrollbar">
+            {isGooglePlaceholder && (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-3">
+                <BadgeAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                <div className="text-xs">
+                  <h5 className="font-extrabold text-amber-400 uppercase tracking-widest font-mono text-[10.5px]">Marketer Registration Required</h5>
+                  <p className="text-slate-300 mt-1 leading-relaxed">
+                    You have successfully signed in via Google. Please complete this official registration form and upload your profile portrait face photo below to activate your stand dashboard, print confirmation slips, and onboard camp market staff.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {profileUpdateError && (
+              <p className="p-3 bg-rose-950/30 border border-rose-500/20 rounded-xl text-[11px] font-semibold text-rose-450 leading-relaxed text-center">
+                {profileUpdateError}
+              </p>
+            )}
+
+            {profileUpdateSuccess && (
+              <p className="p-3 bg-emerald-950/30 border border-emerald-500/25 rounded-xl text-[11px] font-semibold text-emerald-400 flex items-center justify-center gap-1.5 animate-pulse">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Account settings saved and deployed!</span>
+              </p>
+            )}
+
+            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs font-sans">
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider">Business Stall Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dangalan Provision Store"
+                  value={profileBusinessName}
+                  onChange={(e) => setProfileBusinessName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider">Primary Owner Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Idris Dangalan"
+                  value={profileFullName}
+                  onChange={(e) => setProfileFullName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider">Contact Phone *</label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. +234 812 345 6789"
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider">Category *</label>
+                  <select
+                    value={profileCategory}
+                    required
+                    onChange={(e) => setProfileCategory(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-300 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider">Designated Stand Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Stand 45B"
+                    value={profileStandNumber}
+                    onChange={(e) => setProfileStandNumber(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 font-extrabold mb-1 uppercase tracking-wider font-sans">Stand Campaign Offerings</label>
+                <textarea
+                  placeholder="Describe your camp promotion, product categories, or official offers."
+                  rows={2}
+                  value={profileDescription}
+                  onChange={(e) => setProfileDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-300 py-2.5 px-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 leading-normal"
+                />
+              </div>
+
+              {/* Set Profile ID Image (with file picker upload layout) */}
+              <div className="border border-slate-800 p-3.5 rounded-2xl bg-slate-955/25 space-y-3">
+                <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Set Profile ID Image *</span>
+                
+                <div className="flex items-center gap-3.5">
+                  {profilePhotoBase64 ? (
+                    profilePhotoBase64.startsWith("preset:") ? (
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-tr ${getPresetGradient(profilePhotoBase64) || "from-teal-400 to-emerald-555"} shadow flex items-center justify-center font-bold text-slate-950 text-xl select-none uppercase shrink-0`}>
+                        {profileBusinessName ? profileBusinessName.slice(0, 2).toUpperCase() : "M"}
+                      </div>
+                    ) : (
+                      <img 
+                        src={getProxyImageUrl(profilePhotoBase64)} 
+                        alt="Preview" 
+                        className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-800 shadow" 
+                      />
+                    )
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-slate-850 flex items-center justify-center text-slate-400 font-bold shrink-0 border border-slate-800 font-mono text-xl uppercase">
+                      M
+                    </div>
+                  )}
+
+                  <div className="relative border border-dashed border-slate-800 hover:border-emerald-500/25 rounded-xl py-3 px-4 text-center bg-slate-950/40 transition-colors flex-1 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProfilePhotoChange(file);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center justify-center">
+                      <UploadCloud className="w-4 h-4 text-slate-500 mb-1" />
+                      <span className="text-[10px] text-emerald-450 hover:text-emerald-350 font-bold transition-all">Upload facial photo</span>
+                      <span className="text-[8px] text-slate-550 leading-tight">Max 2MB file (Portrait proportions layout)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Operations */}
+              <div className="pt-4 border-t border-slate-800/80 flex gap-2.5">
+                <button
+                  type="submit"
+                  disabled={updatingProfile}
+                  className="flex-1 py-3 bg-[#00e676] hover:bg-[#00c853] text-slate-950 font-black text-xs rounded-2xl cursor-pointer flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-500/10 disabled:opacity-40"
+                >
+                  {updatingProfile ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Synchronizing profile...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Save and Finalize Registration</span>
+                    </>
+                  )}
+                </button>
+                
+                {!isGooglePlaceholder && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="py-3 px-5 bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-slate-200 border border-slate-705 rounded-2xl text-xs font-bold cursor-pointer transition-all"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
   // Reusable confirmation slip preview and print layouts
   const renderConfirmationSlipModals = () => {
     if (!printSlipTarget) return null;
@@ -752,22 +1075,29 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             <div className="p-6 flex-1 overflow-auto bg-slate-950/40 flex items-start justify-center custom-scrollbar">
               <div 
                 id="confirmation-slip-preview"
-                className="bg-white text-slate-900 p-8 rounded-2xl border border-slate-300 font-sans shadow-lg leading-relaxed mx-auto text-left w-[640px] shrink-0"
+                className="bg-white text-slate-900 p-8 rounded-2xl border border-slate-300 font-sans shadow-lg leading-relaxed mx-auto text-left w-[640px] shrink-0 relative overflow-hidden"
               >
+                {/* Background Watermark Seal */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.035] select-none -rotate-12">
+                  <span className="text-[34px] font-black tracking-widest text-emerald-805 leading-none text-center">
+                    NYSC KATSINA CHAMP MARKET OFFICIAL SEAL APPROVED EXPOSITOR NYSC
+                  </span>
+                </div>
+
                 {/* Top Bar Branding */}
-                <div className="flex items-center justify-between border-b-2 border-slate-300 pb-5 mb-5">
+                <div className="flex items-center justify-between border-b-2 border-slate-300 pb-5 mb-5 relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-305 flex items-center justify-center font-bold font-sans text-lg shrink-0">
+                    <div className="w-11 h-11 bg-emerald-100 text-emerald-805 rounded-xl border border-emerald-305 flex items-center justify-center font-black font-sans text-lg shrink-0">
                       NYSC
                     </div>
                     <div>
                       <h2 className="text-sm font-black tracking-tight uppercase leading-none text-slate-900">CAMP MARKET REGISTRATION</h2>
-                      <p className="text-[9px] text-slate-500 font-mono tracking-wide mt-1 uppercase">Katsina State Division • Official Exhibitor Bureau</p>
+                      <p className="text-[9px] text-slate-500 font-mono tracking-wide mt-1 uppercase select-none">Katsina State Division • Official Exhibitor Bureau</p>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-655 uppercase">
+                    <span className="inline-flex py-0.5 px-2 bg-slate-100 border border-slate-200 rounded-lg text-[8.5px] font-mono font-bold tracking-wider text-slate-655 uppercase select-none">
                       CONFIRMATION SLIP
                     </span>
                     <p className="text-[8.5px] text-slate-500 font-mono mt-0.5">REF: CM-{printSlipTarget.id.substring(4).toUpperCase()}</p>
@@ -775,54 +1105,62 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                 </div>
 
                 {/* Main Details Panel */}
-                <div className="grid grid-cols-3 gap-6 mb-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4.5 mb-5 relative z-10">
                   {/* Left Column - Marketer Profile Photo */}
-                  <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                  <div className="flex flex-col items-center justify-center bg-slate-50/70 border border-slate-200 rounded-xl p-3 text-center">
                     {getPresetGradient(printSlipTarget.photo) ? (
-                      <div className={`w-24 h-24 rounded-xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-500"} shadow-sm flex items-center justify-center font-bold text-slate-955 text-3xl uppercase border border-slate-300`}>
+                      <div className={`w-20 h-20 rounded-xl bg-gradient-to-tr ${getPresetGradient(printSlipTarget.photo) || "from-teal-400 to-emerald-505"} shadow-sm flex items-center justify-center font-bold text-slate-955 text-2xl uppercase border border-slate-300`}>
                         {printSlipTarget.businessName.slice(0, 2)}
                       </div>
                     ) : (
                       <img 
                         src={getProxyImageUrl(printSlipTarget.photo)} 
                         alt={printSlipTarget.fullName} 
-                        className="w-24 h-24 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
+                        className="w-20 h-20 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs" 
                         referrerPolicy="no-referrer"
                       />
                     )}
-                    <div className="mt-2.5">
-                      <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-wider truncate max-w-[130px]">{printSlipTarget.fullName}</h3>
-                      <p className="text-[8px] text-slate-400 font-mono uppercase tracking-wider mt-0.5">Primary Registrant</p>
+                    <div className="mt-2 text-center w-full min-w-0">
+                      <h3 className="text-[10px] font-black text-slate-850 uppercase tracking-tight truncate px-1">{printSlipTarget.fullName}</h3>
+                      <p className="text-[7.5px] text-slate-400 font-mono uppercase tracking-wider mt-0.5 select-none font-bold">Registrant Owner</p>
                     </div>
                   </div>
 
-                  {/* Right Columns - Info Fields */}
-                  <div className="col-span-2 space-y-2.5 text-xs text-slate-700">
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Business/Brand:</span>
-                      <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
+                  {/* Middle Column - Details */}
+                  <div className="space-y-1.5 text-[11px] text-slate-700 flex flex-col justify-center">
+                    <div className="flex flex-col border-b border-slate-100 pb-1">
+                      <span className="text-slate-400 font-bold font-sans text-[7.5px] uppercase tracking-wider select-none leading-none">Registered Brand / Stall</span>
+                      <span className="font-extrabold text-slate-900 uppercase truncate mt-0.5">{printSlipTarget.businessName}</span>
                     </div>
                     
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Stand Code:</span>
-                      <span className="font-mono text-emerald-700 font-black text-[11px]">STAND {printSlipTarget.standNumber}</span>
+                    <div className="flex flex-col border-b border-slate-100 pb-1">
+                      <span className="text-slate-400 font-bold font-sans text-[7.5px] uppercase tracking-wider select-none leading-none">Stand Assignment Code</span>
+                      <span className="font-mono text-emerald-700 font-black text-xs mt-0.5">STAND {printSlipTarget.standNumber}</span>
                     </div>
 
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Category Segment:</span>
-                      <span className="font-bold text-slate-800">{printSlipTarget.category}</span>
+                    <div className="flex flex-col border-b border-slate-100 pb-1">
+                      <span className="text-slate-400 font-bold font-sans text-[7.5px] uppercase tracking-wider select-none leading-none">Trade Core Segment</span>
+                      <span className="font-bold text-slate-800 truncate mt-0.5">{printSlipTarget.category}</span>
                     </div>
 
-                    <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Cell Number:</span>
-                      <span className="font-mono text-slate-800 font-semibold">{printSlipTarget.phone}</span>
+                    <div className="flex flex-col pb-0.5">
+                      <span className="text-slate-400 font-bold font-sans text-[7.5px] uppercase tracking-wider select-none leading-none">Direct Connection Line</span>
+                      <span className="font-mono text-slate-800 font-bold mt-0.5">{printSlipTarget.phone}</span>
                     </div>
+                  </div>
 
-                    <div className="flex justify-between py-1">
-                      <span className="text-slate-555 font-semibold font-sans text-[9px] uppercase tracking-wider">Audit Match:</span>
-                      <span className={`font-mono text-[9px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-700' : 'text-amber-700'}`}>
-                        {printSlipTarget.verificationStatus === "verified" ? "★ APPROVED & SEALED" : "★ PENDING AUDIT"}
-                      </span>
+                  {/* Right Column - Live green QR Code seal */}
+                  <div className="flex flex-col items-center justify-center bg-emerald-50/15 border border-emerald-100/65 rounded-xl p-3 text-center">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&color=059669&data=${encodeURIComponent(
+                        `NYSC KATSINA CONFIRMED EXHIBITOR\nRef: CM-${printSlipTarget?.id.substring(4).toUpperCase()}\nName: ${printSlipTarget?.fullName}\nBusiness: ${printSlipTarget?.businessName}\nStand assigned: STAND ${printSlipTarget?.standNumber}\nAudit status: OPERATIONAL APPROVED`
+                      )}`}
+                      alt="Exhibitor QR Seal" 
+                      className="w-22 h-22 rounded-lg shadow-sm border border-emerald-100 bg-white"
+                    />
+                    <div className="mt-2 text-center">
+                      <span className="text-[7.5px] font-black text-emerald-800 tracking-wider uppercase block select-none">★ SECURE VERIFICATION ★</span>
+                      <span className="text-[7.5px] font-mono font-black text-emerald-600 block mt-0.5 leading-none">CM-{printSlipTarget.id.substring(4).toUpperCase()}</span>
                     </div>
                   </div>
                 </div>
@@ -927,10 +1265,33 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               <button
                 onClick={handleShareSlip}
                 disabled={sharingSlip}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-550 disabled:bg-slate-800 text-white disabled:text-slate-500 text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+                title="Open standard system share hub"
               >
                 <Upload className="w-4 h-4" />
-                <span>{sharingSlip ? "Sharing..." : "Share Slip"}</span>
+                <span>{sharingSlip ? "Sharing..." : "Share Link"}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `🏛️ *NYSC KATSINA CAMP MARKET CONFIRMATION*\n\n` +
+                    `👤 *Primary Registrant:* ${printSlipTarget.fullName}\n` +
+                    `💼 *Business Name:* ${printSlipTarget.businessName}\n` +
+                    `📍 *Stand Assignment:* STAND ${printSlipTarget.standNumber}\n` +
+                    `🏷️ *Segment Category:* ${printSlipTarget.category}\n` +
+                    `📊 *Verification Status:* ${printSlipTarget.verificationStatus === "verified" ? "APPROVED & SEALED" : "PENDING AUDIT"}\n` +
+                    `💳 *Amount Paid:* ₦${(printSlipTarget.amountPaid || 0).toLocaleString()}\n` +
+                    `🔐 *Verification Code:* CM-${printSlipTarget.id.substring(4).toUpperCase()}\n\n` +
+                    `_Generated officially on Katsina Camp Market Management Node._`
+                  )}`;
+                  window.open(whatsappUrl, "_blank");
+                }}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-extrabold rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/20"
+                title="Send full confirmation text directly to WhatsApp"
+              >
+                <Phone className="w-4 h-4 text-emerald-300" />
+                <span>WhatsApp Share</span>
               </button>
 
               <button
@@ -962,7 +1323,13 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
 
         {/* Official Registration Confirmation Slip Print Layout */}
         <div className="print-slip-only animate-fade-in text-slate-900">
-          <div className="w-[720px] bg-white text-slate-900 p-8 rounded-3xl border-2 border-slate-300 font-sans relative shadow-2xl mx-auto my-6 leading-relaxed">
+          <div className="w-[720px] bg-white text-slate-900 p-8 rounded-3xl border-2 border-slate-300 font-sans relative shadow-2xl mx-auto my-6 leading-relaxed overflow-hidden">
+            {/* Background Watermark Seal for Printed Page */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.035] select-none -rotate-12">
+              <span className="text-[36px] font-black tracking-widest text-emerald-805 leading-tight text-center">
+                NYSC KATSINA CHAMP MARKET OFFICIAL SEAL APPROVED EXPOSITOR NYSC KATSINA
+              </span>
+            </div>
             
             {/* Top Bar Branding */}
             <div className="flex items-center justify-between border-b-2 border-slate-400 pb-5 mb-6">
@@ -985,7 +1352,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
             </div>
 
             {/* Main Details Panel */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-3 gap-6 mb-6">
               
               {/* Left Column - Marketer Profile Photo */}
               <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center">
@@ -1008,7 +1375,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               </div>
 
               {/* Right Columns - Info Fields */}
-              <div className="md:col-span-2 space-y-3.5 text-xs text-slate-700">
+              <div className="space-y-3.5 text-xs text-slate-700 flex flex-col justify-center">
                 <div className="flex justify-between py-1.5 border-b border-slate-200">
                   <span className="text-slate-500 font-semibold font-sans uppercase text-[9.5px] tracking-wider">Registered Business/Brand:</span>
                   <span className="font-extrabold text-slate-900 uppercase">{printSlipTarget.businessName}</span>
@@ -1039,6 +1406,21 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                   <span className={`font-mono text-[10.5px] font-bold ${printSlipTarget.verificationStatus === "verified" ? 'text-emerald-600' : 'text-amber-600'}`}>
                     ★ {printSlipTarget.verificationStatus === "verified" ? "APPROVED & SEALED" : "PENDING AUDIT EXAMINATION"}
                   </span>
+                </div>
+              </div>
+
+              {/* Column 3 - Live highly scannable QR Code for printed copy */}
+              <div className="flex flex-col items-center justify-center bg-emerald-50/15 border border-emerald-150 rounded-2xl p-4 text-center">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=115x115&margin=0&color=059669&data=${encodeURIComponent(
+                    `NYSC KATSINA CONFIRMED EXHIBITOR\nRef: CM-${printSlipTarget?.id.substring(4).toUpperCase()}\nName: ${printSlipTarget?.fullName}\nBusiness: ${printSlipTarget?.businessName}\nStand assigned: STAND ${printSlipTarget?.standNumber}\nAudit status: OPERATIONAL APPROVED`
+                  )}`}
+                  alt="Printed QR Seal" 
+                  className="w-28 h-28 rounded-xl shadow-sm border border-emerald-200 bg-white"
+                />
+                <div className="mt-2.5 text-center font-sans">
+                  <span className="text-[8px] font-black text-emerald-800 tracking-wider uppercase block select-none">★ SECURE PRINT SEAL ★</span>
+                  <span className="text-[8.5px] font-mono font-black text-emerald-600 block mt-0.5 leading-none">CM-{printSlipTarget.id.substring(4).toUpperCase()}</span>
                 </div>
               </div>
 
@@ -1197,19 +1579,35 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
               <h1 className="text-xl sm:text-2xl font-extrabold text-slate-100 tracking-tight mt-1">{currentMarketer.businessName}</h1>
               <p className="text-xs text-slate-400 mt-1">Managed by <strong className="text-slate-200">{currentMarketer.fullName}</strong> | Phone: <strong className="text-slate-200">{currentMarketer.phone}</strong></p>
             </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+          </div>          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+            <button
+              onClick={() => {
+                setProfileFullName(currentMarketer.fullName);
+                setProfileBusinessName(currentMarketer.businessName);
+                setProfilePhone(currentMarketer.phone === "080-GOOGLE" ? "" : currentMarketer.phone);
+                setProfileStandNumber(currentMarketer.standNumber);
+                setProfileCategory(currentMarketer.category);
+                setProfileDescription(currentMarketer.description.includes("registered via") ? "" : currentMarketer.description);
+                setProfilePhotoBase64(currentMarketer.photo || null);
+                setIsEditingProfile(prev => !prev);
+              }}
+              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white border border-slate-700 font-extrabold rounded-2xl text-xs cursor-pointer transition-all flex items-center justify-center gap-2 shrink-0"
+              title="Edit Profile Stand Information and Photo"
+            >
+              <Edit3 className="w-4 h-4 text-emerald-450 shrink-0" />
+              <span>{isEditingProfile ? "Exit Profile Form" : "Edit Profile Details"}</span>
+            </button>
+
             <button
               onClick={() => handlePrintSlip(currentMarketer)}
-              className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-2xl text-xs cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10 shrink-0"
+              className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-955 font-extrabold rounded-2xl text-xs cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10 shrink-0"
               title="Print/Download Official Registration Confirmation Slip"
             >
               <Printer className="w-4 h-4" />
               <span>Print Confirmation Slip</span>
             </button>
 
-            <div className="shrink-0 bg-slate-950/60 border border-slate-850 p-3 rounded-2xl text-xs flex items-center gap-2">
+            <div className="shrink-0 bg-slate-950/60 border border-slate-850 p-3 rounded-xl text-xs flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-[9px] uppercase tracking-wider text-slate-505 font-bold font-mono">STAND STATUS</span>
@@ -1219,109 +1617,152 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
           </div>
         </div>
 
+        {/* Active Action Promo Banner */}
+        {(() => {
+          const isGooglePlaceholder = 
+            currentMarketer.category === "General" || 
+            currentMarketer.phone === "080-GOOGLE" || 
+            currentMarketer.phone.includes("@") || 
+            currentMarketer.description.includes("registered via Google") ||
+            !currentMarketer.photo ||
+            currentMarketer.photo.startsWith("preset:");
+            
+          if (isGooglePlaceholder && !isEditingProfile) {
+            return (
+              <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/35 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl border-dashed">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 bg-amber-500/15 text-amber-400 rounded-xl border border-amber-500/25 shrink-0 mt-0.5 animate-pulse">
+                    <BadgeAlert className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black tracking-wider text-amber-400 uppercase font-mono">STAND PROFILE SETUP REQUIRED</h3>
+                    <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                      You are logged in via Gmail. Please complete your official merchant registration form, choose your trade category, and upload your profile portrait photo immediately to activate your campaign station badge and slip.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setProfileFullName(currentMarketer.fullName);
+                    setProfileBusinessName(currentMarketer.businessName);
+                    setProfilePhone(currentMarketer.phone === "080-GOOGLE" ? "" : currentMarketer.phone);
+                    setProfileStandNumber(currentMarketer.standNumber);
+                    setProfileCategory(currentMarketer.category);
+                    setProfileDescription(currentMarketer.description.includes("registered via") ? "" : currentMarketer.description);
+                    setProfilePhotoBase64(currentMarketer.photo || null);
+                    setIsEditingProfile(true);
+                  }}
+                  className="py-2.5 px-5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl transition-all shadow-lg hover:shadow-amber-500/10 shrink-0 self-start sm:self-center cursor-pointer"
+                >
+                  Configure My Profile
+                </button>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
         {/* Workspace Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          
-          {/* Col Left - Profile details & Change pic */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Business Card Info */}
-            <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg relative overflow-hidden">
-              <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${tradeTheme.accentLine}`} />
-              
-              <div className="flex items-center gap-2 border-b border-slate-805 pb-3">
-                <Building2 className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">Stall Information</h3>
-              </div>
-              
-              <p className="text-xs text-slate-400 leading-relaxed italic">
-                "{currentMarketer.description}"
-              </p>
-
-              <div className="space-y-2.5 pt-1.5 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-800/40 font-sans">
-                  <span className="text-slate-500">Stand Assignment:</span>
-                  <span className="font-mono text-slate-200 font-bold">{currentMarketer.standNumber}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800/40">
-                  <span className="text-slate-500">Industry / Trade:</span>
-                  <span className="text-slate-200 font-semibold">{currentMarketer.category}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-805/40">
-                  <span className="text-slate-500">Primary Registrant:</span>
-                  <span className="text-slate-200 font-semibold">{currentMarketer.fullName}</span>
-                </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-slate-500">Registration Date:</span>
-                  <span className="text-slate-200 font-mono text-[11px]">
-                    {new Date(currentMarketer.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Picture Override Zone */}
-            <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-blue-400 animate-pulse" />
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">My Profile Photo</h3>
-                </div>
-                {uploadingSelfPhoto && (
-                  <span className="text-[10px] text-blue-450 animate-pulse font-bold uppercase tracking-widest font-mono">Syncing...</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 bg-slate-950/40 p-3 rounded-xl border border-slate-800/40">
-                {marketerPresetGrad ? (
-                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-tr ${marketerPresetGrad} shadow flex items-center justify-center font-bold text-slate-950 text-2xl select-none uppercase shrink-0`}>
-                    {currentMarketer.businessName.slice(0, 2)}
+            <React.Fragment>
+                {/* Business Card Info */}
+                <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg relative overflow-hidden animate-fade-in">
+                  <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${tradeTheme.accentLine}`} />
+                  
+                  <div className="flex items-center gap-2 border-b border-slate-805 pb-3">
+                    <Building2 className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">Stall Information</h3>
                   </div>
-                ) : (
-                  <img 
-                    src={currentMarketer.photo} 
-                    alt={currentMarketer.fullName} 
-                    className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-800 shadow" 
-                  />
-                )}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-200">{currentMarketer.fullName}</h4>
-                  <p className="text-[10px] text-slate-505 mt-0.5">Recommended: Clear face photo with portrait orientation (Max 2MB)</p>
-                </div>
-              </div>
+                  
+                  <p className="text-xs text-slate-400 leading-relaxed italic">
+                    "{currentMarketer.description}"
+                  </p>
 
-              <div className="relative border border-dashed border-slate-850 hover:border-emerald-550/25 rounded-2xl p-4 text-center bg-slate-950/30 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploadingSelfPhoto}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleMarketerPhotoUpload(file, currentMarketer.id);
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                />
-                <div className="flex flex-col items-center justify-center gap-2 font-sans">
-                  <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-emerald-500" />
-                  <span className="text-[11px] text-emerald-450 hover:text-emerald-300 font-bold transition-all">
-                    {uploadingSelfPhoto ? "Saving profile photo..." : "Select Profile Face File"}
-                  </span>
-                  <span className="text-[9px] text-slate-550">JPEG or PNG file (Square layout preferred)</span>
+                  <div className="space-y-2.5 pt-1.5 text-xs">
+                    <div className="flex justify-between py-1.5 border-b border-slate-800/40 font-sans">
+                      <span className="text-slate-500">Stand Assignment:</span>
+                      <span className="font-mono text-slate-200 font-bold">{currentMarketer.standNumber}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-slate-800/40">
+                      <span className="text-slate-500">Industry / Trade:</span>
+                      <span className="text-slate-200 font-semibold">{currentMarketer.category}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-slate-805/40">
+                      <span className="text-slate-500">Primary Registrant:</span>
+                      <span className="text-slate-200 font-semibold">{currentMarketer.fullName}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5">
+                      <span className="text-slate-500">Registration Date:</span>
+                      <span className="text-slate-200 font-mono text-[11px]">
+                        {new Date(currentMarketer.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {selfPhotoError && (
-                <p className="text-[10.5px] text-rose-450 font-semibold bg-rose-950/20 border border-rose-500/20 p-2.5 rounded-xl">{selfPhotoError}</p>
-              )}
-              {selfPhotoSuccess && (
-                <p className="text-[10.5px] text-emerald-400 font-semibold bg-emerald-950/20 border border-emerald-500/20 p-2.5 rounded-xl flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>Profile picture modified and deployed successfully!</span>
-                </p>
-              )}
+                {/* Profile Picture Override Zone */}
+                <div className="bg-slate-900 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-blue-400" />
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">My Profile Photo</h3>
+                    </div>
+                    {uploadingSelfPhoto && (
+                      <span className="text-[10px] text-blue-450 animate-pulse font-bold uppercase tracking-widest font-mono">Syncing...</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4 bg-slate-950/40 p-3 rounded-xl border border-slate-800/40">
+                    {marketerPresetGrad ? (
+                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-tr ${marketerPresetGrad} shadow flex items-center justify-center font-bold text-slate-955 text-2xl select-none uppercase shrink-0`}>
+                        {currentMarketer.businessName.slice(0, 2)}
+                      </div>
+                    ) : (
+                      <img 
+                        src={currentMarketer.photo} 
+                        alt={currentMarketer.fullName} 
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-800 shadow" 
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">{currentMarketer.fullName}</h4>
+                      <p className="text-[10px] text-slate-505 mt-0.5">Recommended: Clear face photo with portrait orientation (Max 2MB)</p>
+                    </div>
+                  </div>
+
+                  <div className="relative border border-dashed border-slate-850 hover:border-emerald-555/25 rounded-2xl p-4 text-center bg-slate-950/30 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingSelfPhoto}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleMarketerPhotoUpload(file, currentMarketer.id);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <div className="flex flex-col items-center justify-center gap-2 font-sans">
+                      <UploadCloud className="w-5 h-5 text-slate-500 group-hover:text-emerald-500" />
+                      <span className="text-[11px] text-emerald-450 hover:text-emerald-300 font-bold transition-all">
+                        {uploadingSelfPhoto ? "Saving profile photo..." : "Select Profile Face File"}
+                      </span>
+                      <span className="text-[9px] text-slate-550">JPEG or PNG file (Square layout preferred)</span>
+                    </div>
+                  </div>
+
+                  {selfPhotoError && (
+                    <p className="text-[10.5px] text-rose-450 font-semibold bg-rose-950/20 border border-rose-500/20 p-2.5 rounded-xl">{selfPhotoError}</p>
+                  )}
+                  {selfPhotoSuccess && (
+                    <p className="text-[10.5px] text-emerald-400 font-semibold bg-emerald-950/20 border border-emerald-500/20 p-2.5 rounded-xl flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Profile picture modified and deployed successfully!</span>
+                    </p>
+                  )}
+                </div>
+              </React.Fragment>
             </div>
-
-          </div>
 
           {/* Col Right - Staff onboarding & List */}
           <div className="lg:col-span-3 space-y-6">
@@ -1546,6 +1987,7 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
         </div>
 
         {renderConfirmationSlipModals()}
+        {renderProfileSetupPopup()}
       </div>
     );
   }

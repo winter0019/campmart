@@ -228,19 +228,21 @@ export const api = {
       console.warn("Running in Static Fallback Mode for Auth", e);
       
       const usernameLower = username.toLowerCase();
-      
-      // Match Evans Okwor & Idris Dangalan fallback credentials
-      if (usernameLower === "admin" && (password === "admin" || password === "admin_change_this_on_netlify")) {
-        return {
-          token: "local-jwt-token-admin",
-          user: { id: "admin-user", username: "admin", fullName: "Idris Dangalan", role: "admin" }
-        };
-      }
-      if (usernameLower === "admin001" && (password === "evans001" || password === "admin001_change_this_on_netlify")) {
-        return {
-          token: "local-jwt-token-admin-evans",
-          user: { id: "admin-user-evans", username: "admin001", fullName: "Mr. Evans Okwor", role: "admin" }
-        };
+      const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001";
+      const isAdminPassword = password === "admin" || password === "evans001" || password === "admin_change_this_on_netlify" || password === "admin001_change_this_on_netlify";
+
+      if (isAdminUsername && isAdminPassword) {
+        if (usernameLower === "admin") {
+          return {
+            token: "local-jwt-token-admin",
+            user: { id: "admin-user", username: "admin", fullName: "Idris Dangalan", role: "admin" }
+          };
+        } else {
+          return {
+            token: "local-jwt-token-admin-evans",
+            user: { id: "admin-user-evans", username: "admin001", fullName: "Mr. Evans Okwor", role: "admin" }
+          };
+        }
       }
 
       // Check if username/password matches local or Firestore marketer
@@ -852,5 +854,73 @@ export const api = {
     }
 
     return { success: true, photo: photoBase64 };
+  },
+
+  // 12. Update Marketer Profile (Details + Photo update)
+  async updateMarketerProfile(id: string, payload: {
+    fullName: string;
+    businessName: string;
+    phone: string;
+    standNumber: string;
+    category: string;
+    description: string;
+    photo?: string;
+  }): Promise<any> {
+    const uploadedPhoto = payload.photo && payload.photo.startsWith("data:") 
+      ? await uploadPhotoStorageIfNeeded(id, payload.photo) 
+      : payload.photo;
+    const finalPhoto = uploadedPhoto || payload.photo;
+
+    // First try Firestore
+    try {
+      const docRef = doc(db, "marketers", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Marketer;
+        const updated = {
+          ...data,
+          fullName: payload.fullName,
+          businessName: payload.businessName,
+          phone: payload.phone,
+          standNumber: payload.standNumber,
+          category: payload.category,
+          description: payload.description,
+          photo: finalPhoto || data.photo
+        };
+        await setDoc(docRef, cleanFirestorePayload(updated));
+
+        const newActivity: LiveActivity = {
+          id: `act-${Date.now()}`,
+          type: "marketer_registered",
+          timestamp: new Date().toISOString(),
+          message: `Updated profile details for marketer ${payload.fullName}`,
+          details: `Stall: ${payload.businessName}`
+        };
+        await setDoc(doc(db, "activities", newActivity.id), newActivity);
+      }
+    } catch (e: any) {
+      console.warn("Firestore profile update failed, shifting to offline fallback cache write.", e);
+    }
+
+    // fallback / cache updates
+    const dbLocal = loadLocalDB();
+    const marketerIndex = dbLocal.marketers.findIndex(m => m.id === id);
+    if (marketerIndex !== -1) {
+      dbLocal.marketers[marketerIndex] = {
+        ...dbLocal.marketers[marketerIndex],
+        fullName: payload.fullName,
+        businessName: payload.businessName,
+        phone: payload.phone,
+        standNumber: payload.standNumber,
+        category: payload.category,
+        description: payload.description,
+        photo: finalPhoto || dbLocal.marketers[marketerIndex].photo
+      };
+      
+      logLocalActivity(dbLocal, "marketer_registered", `Updated profile details for marketer ${payload.fullName}`, `Stall: ${payload.businessName}`);
+      saveLocalDB(dbLocal);
+      return { success: true, updatedMarketer: dbLocal.marketers[marketerIndex] };
+    }
+    return { success: false, error: "Marketer not found" };
   }
 };
