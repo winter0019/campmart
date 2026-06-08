@@ -324,23 +324,23 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                         ZONE 1-A
                       </span>
                     </div>
+                  </div>
 
-                    {/* Floating Profile Image wrapped in white ring */}
-                    <div className="absolute bottom-[-56px] left-1/2 -translate-x-1/2 z-10">
-                      <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
-                        {getPresetGradient(currentEntity.photo) ? (
-                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
-                            {currentEntity.name.slice(0, 2)}
-                          </div>
-                        ) : (
-                          <img 
-                            src={currentEntity.photo} 
-                            alt={currentEntity.name} 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        )}
-                      </div>
+                  {/* Floating Profile Image wrapped in white ring */}
+                  <div className="absolute top-[140px] -translate-y-1/2 left-1/2 -translate-x-1/2 z-10">
+                    <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                      {getPresetGradient(currentEntity.photo) ? (
+                        <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
+                          {currentEntity.name.slice(0, 2)}
+                        </div>
+                      ) : (
+                        <img 
+                          src={currentEntity.photo} 
+                          alt={currentEntity.name} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -585,22 +585,22 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                         ZONE 1-A
                       </span>
                     </div>
+                  </div>
 
-                    {/* Floating Profile Image wrapped in white ring */}
-                    <div className="absolute bottom-[-52px] left-1/2 -translate-x-1/2 z-10">
-                      <div className="w-22 h-26 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
-                        {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
-                          <img 
-                            src={currentEntity.photo} 
-                            alt={currentEntity.name} 
-                            className="w-full h-full object-cover" 
-                          />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
-                            {currentEntity.name.slice(0, 2)}
-                          </div>
-                        )}
-                      </div>
+                  {/* Floating Profile Image wrapped in white ring */}
+                  <div className="absolute top-[140px] -translate-y-1/2 left-1/2 -translate-x-1/2 z-10">
+                    <div className="w-22 h-26 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                      {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                        <img 
+                          src={currentEntity.photo} 
+                          alt={currentEntity.name} 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
+                          {currentEntity.name.slice(0, 2)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -757,22 +757,22 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                   ZONE 1-A
                 </span>
               </div>
+            </div>
 
-              {/* Floating Profile Image wrapped in white ring */}
-              <div className="absolute bottom-[-56px] left-1/2 -translate-x-1/2 z-10">
-                <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
-                  {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
-                    <img 
-                      src={currentEntity.photo} 
-                      alt={currentEntity.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : (
-                    <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
-                      {currentEntity.name.slice(0, 2)}
-                    </div>
-                  )}
-                </div>
+            {/* Floating Profile Image wrapped in white ring */}
+            <div className="absolute top-[150px] -translate-y-1/2 left-1/2 -translate-x-1/2 z-10">
+              <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                  <img 
+                    src={currentEntity.photo} 
+                    alt={currentEntity.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
+                    {currentEntity.name.slice(0, 2)}
+                  </div>
+                )}
               </div>
             </div>
 
