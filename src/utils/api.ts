@@ -76,9 +76,13 @@ async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | unde
 
 // dynamic API endpoint resolver
 export function getApiUrl(path: string): string {
-  const savedUrl = localStorage.getItem("campmark_server_url");
+  let savedUrl = localStorage.getItem("campmark_server_url");
   if (savedUrl) {
-    const cleanUrl = savedUrl.replace(/\/+$/, "");
+    let cleanUrl = savedUrl.trim().replace(/\/+$/, "");
+    if (cleanUrl.includes("ais-dev-")) {
+      cleanUrl = cleanUrl.replace("ais-dev-", "ais-pre-");
+      localStorage.setItem("campmark_server_url", cleanUrl);
+    }
     return `${cleanUrl}${path}`;
   }
 
