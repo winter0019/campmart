@@ -137,38 +137,41 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      const role: "admin" | "marketer" = "marketer"; // Rule enforce: Google accounts are STRICTLY limited to marketer role
-      let fullName = user.displayName || "Google User";
+      const isUserAdmin = user.email?.toLowerCase() === "dangalan20@gmail.com";
+      const role: "admin" | "marketer" = isUserAdmin ? "admin" : "marketer";
+      let fullName = user.displayName || (isUserAdmin ? "Dang Alan" : "Google User");
       const usernamePart = user.email?.split("@")[0] || "google_user";
-      let userId = user.uid;
+      let userId = isUserAdmin ? "admin-dangalan" : user.uid;
 
-      // Look up registered marketers
-      try {
-        const marketers = await api.getMarketers();
-        const found = marketers.find(m => 
-          m.fullName.toLowerCase() === fullName.toLowerCase() || 
-          m.businessName.toLowerCase() === fullName.toLowerCase()
-        );
-        if (found) {
-          fullName = found.fullName;
-          userId = found.id;
-        } else {
-          // Dynamic auto-registration for the Gmail logged-in user to guarantee they have their dashboard
-          const uniqueStandNum = `G-${user.uid.substring(0, 4).toUpperCase()}`;
-          const newMkt = await api.registerMarketer({
-            fullName: user.displayName || "Google User",
-            businessName: `${user.displayName || "Google"}'s Merchant Stand`,
-            phone: user.phoneNumber || "080-GOOGLE",
-            standNumber: uniqueStandNum,
-            category: "General",
-            description: `Camp stand registered via Google account (${user.email || "N/A"}).`,
-            photo: user.photoURL || "preset:emerald"
-          });
-          userId = newMkt.id;
-          fullName = newMkt.fullName;
+      if (!isUserAdmin) {
+        // Look up registered marketers
+        try {
+          const marketers = await api.getMarketers();
+          const found = marketers.find(m => 
+            m.fullName.toLowerCase() === fullName.toLowerCase() || 
+            m.businessName.toLowerCase() === fullName.toLowerCase()
+          );
+          if (found) {
+            fullName = found.fullName;
+            userId = found.id;
+          } else {
+            // Dynamic auto-registration for the Gmail logged-in user to guarantee they have their dashboard
+            const uniqueStandNum = `G-${user.uid.substring(0, 4).toUpperCase()}`;
+            const newMkt = await api.registerMarketer({
+              fullName: user.displayName || "Google User",
+              businessName: `${user.displayName || "Google"}'s Merchant Stand`,
+              phone: user.phoneNumber || "080-GOOGLE",
+              standNumber: uniqueStandNum,
+              category: "General",
+              description: `Camp stand registered via Google account (${user.email || "N/A"}).`,
+              photo: user.photoURL || "preset:emerald"
+            });
+            userId = newMkt.id;
+            fullName = newMkt.fullName;
+          }
+        } catch (e) {
+          console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
         }
-      } catch (e) {
-        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
       }
 
       onLoginSuccess({
@@ -204,38 +207,41 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setError(null);
 
     try {
-      const role: "admin" | "marketer" = "marketer"; // STRICT ENFORCEMENT: No Gmail can access admin
-      let sName = simName.trim() || "Simulated Google User";
+      const isSimAdmin = simEmail.trim().toLowerCase() === "dangalan20@gmail.com";
+      const role: "admin" | "marketer" = isSimAdmin ? "admin" : "marketer";
+      let sName = simName.trim() || (isSimAdmin ? "Dang Alan" : "Simulated Google User");
       const usernamePart = simEmail.split("@")[0] || "simulated_user";
-      let userId = `sim-google-${usernamePart}`;
+      let userId = isSimAdmin ? "admin-dangalan" : `sim-google-${usernamePart}`;
 
-      try {
-        const marketers = await api.getMarketers();
-        const found = marketers.find(m => 
-          m.fullName.toLowerCase() === sName.toLowerCase() || 
-          m.businessName.toLowerCase() === sName.toLowerCase() ||
-          m.phone === simEmail
-        );
+      if (!isSimAdmin) {
+        try {
+          const marketers = await api.getMarketers();
+          const found = marketers.find(m => 
+            m.fullName.toLowerCase() === sName.toLowerCase() || 
+            m.businessName.toLowerCase() === sName.toLowerCase() ||
+            m.phone === simEmail
+          );
 
-        if (found) {
-          sName = found.fullName;
-          userId = found.id;
-        } else {
-          const uniqueStandNum = `G-${userId.substring(11, 15).toUpperCase()}`;
-          const newMkt = await api.registerMarketer({
-            fullName: sName,
-            businessName: `${sName}'s Merchant Stand`,
-            phone: simEmail,
-            standNumber: uniqueStandNum,
-            category: "General",
-            description: `Camp stand registered via simulated Google account (${simEmail}).`,
-            photo: `preset:${selectedPreset}`
-          });
-          userId = newMkt.id;
-          sName = newMkt.fullName;
+          if (found) {
+            sName = found.fullName;
+            userId = found.id;
+          } else {
+            const uniqueStandNum = `G-${userId.substring(11, 15).toUpperCase()}`;
+            const newMkt = await api.registerMarketer({
+              fullName: sName,
+              businessName: `${sName}'s Merchant Stand`,
+              phone: simEmail,
+              standNumber: uniqueStandNum,
+              category: "General",
+              description: `Camp stand registered via simulated Google account (${simEmail}).`,
+              photo: `preset:${selectedPreset}`
+            });
+            userId = newMkt.id;
+            sName = newMkt.fullName;
+          }
+        } catch (e) {
+          console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
         }
-      } catch (e) {
-        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
       }
 
       onLoginSuccess({

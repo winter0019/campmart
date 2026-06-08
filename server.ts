@@ -105,17 +105,17 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   const usernameLower = username.toLowerCase();
-  const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001";
+  const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001" || usernameLower === "dangalan20@gmail.com";
   const isAdminPassword = password === "admin" || password === "evans001" || password === process.env.ADMIN_PASSWORD || password === process.env.ADMIN001_PASSWORD;
 
   if (isAdminUsername && isAdminPassword) {
-    if (usernameLower === "admin") {
+    if (usernameLower === "admin" || usernameLower === "dangalan20@gmail.com") {
       return res.json({
         token: "mock-jwt-token-admin",
         user: {
           id: "admin-user",
-          username: "admin",
-          fullName: "Idris Dangalan",
+          username: "dangalan20@gmail.com",
+          fullName: "Dang Alan",
           role: "admin"
         }
       });
