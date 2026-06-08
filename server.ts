@@ -40,26 +40,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Echo the origin back to support cookies and bearer credentials safely across subdomains
-      if (!origin) {
-        callback(null, true);
-      } else {
-        callback(null, origin);
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "X-Access-Token"],
-    optionsSuccessStatus: 200
-  })
-);
-
-// Support OPTIONS pre-flights across all endpoints
-app.options("*", cors());
-
 
 // Default Interfaces
 interface Worker {

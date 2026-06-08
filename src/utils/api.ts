@@ -168,6 +168,7 @@ export const api = {
 
     const docRef = doc(db, "marketers", newMarketer.id);
     const cleanM = cleanFirestorePayload(newMarketer);
+    console.log("Saving marketer:", cleanM);
     await withTimeout(setDoc(docRef, cleanM), 8000, "registerMarketer Firestore write");
 
     // Write activity log

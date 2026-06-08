@@ -39,6 +39,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ marketers, activities, onRefreshAllData, onNavigate }: DashboardProps) {
+  console.log("Dashboard marketers:", marketers);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [dashboardSearch, setDashboardSearch] = useState("");
   const [error, setError] = useState<string | null>(null);

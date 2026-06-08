@@ -75,10 +75,11 @@ export default function App() {
     // Initial fetch from backend to populate state safely
     fetchMarketers();
 
-    // OPTIONAL: Keep direct real-time safety fallback streaming hook active
+        // OPTIONAL: Keep direct real-time safety fallback streaming hook active
     const unsubscribe = onSnapshot(
       collection(db, "marketers"),
       (snapshot) => {
+        console.log("Realtime snapshot:", snapshot.docs.length);
         const liveMarketers = snapshot.docs.map((doc) => doc.data() as Marketer);
         setMarketers(liveMarketers);
         setLoading(false);
