@@ -105,10 +105,10 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   const usernameLower = username.toLowerCase();
-  const isAdminUsername = usernameLower === "admin" || usernameLower === "admin001";
-  const isAdminPassword = password === "admin" || password === "evans001" || password === process.env.ADMIN_PASSWORD || password === process.env.ADMIN001_PASSWORD;
+  const isAdmin = (usernameLower === "admin" && password === "admin") || 
+                  (usernameLower === "admin001" && password === "evans001");
 
-  if (isAdminUsername && isAdminPassword) {
+  if (isAdmin) {
     if (usernameLower === "admin") {
       return res.json({
         token: "mock-jwt-token-admin",

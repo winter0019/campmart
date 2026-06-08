@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { api } from "../utils/api";
-import { auth } from "../firebase";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { 
   KeyRound, 
   ShieldAlert, 
@@ -16,8 +14,7 @@ import {
   UploadCloud, 
   ArrowLeft, 
   CheckCircle2, 
-  ClipboardCheck,
-  Mail
+  ClipboardCheck
 } from "lucide-react";
 
 interface LoginProps {
@@ -94,10 +91,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
   const [regSuccess, setRegSuccess] = useState(false);
 
-  // Google/Gmail Simulation bypass states
-  const [showSimulator, setShowSimulator] = useState(false);
-  const [simEmail, setSimEmail] = useState("");
-  const [simName, setSimName] = useState("");
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,131 +113,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const role: "admin" | "marketer" = "marketer"; // Rule enforce: Google accounts are STRICTLY limited to marketer role
-      let fullName = user.displayName || "Google User";
-      const usernamePart = user.email?.split("@")[0] || "google_user";
-      let userId = user.uid;
 
-      // Look up registered marketers
-      try {
-        const marketers = await api.getMarketers();
-        const found = marketers.find(m => 
-          m.fullName.toLowerCase() === fullName.toLowerCase() || 
-          m.businessName.toLowerCase() === fullName.toLowerCase()
-        );
-        if (found) {
-          fullName = found.fullName;
-          userId = found.id;
-        } else {
-          // Dynamic auto-registration for the Gmail logged-in user to guarantee they have their dashboard
-          const uniqueStandNum = `G-${user.uid.substring(0, 4).toUpperCase()}`;
-          const newMkt = await api.registerMarketer({
-            fullName: user.displayName || "Google User",
-            businessName: `${user.displayName || "Google"}'s Merchant Stand`,
-            phone: user.phoneNumber || "080-GOOGLE",
-            standNumber: uniqueStandNum,
-            category: "General",
-            description: `Camp stand registered via Google account (${user.email || "N/A"}).`,
-            photo: user.photoURL || "preset:emerald"
-          });
-          userId = newMkt.id;
-          fullName = newMkt.fullName;
-        }
-      } catch (e) {
-        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
-      }
-
-      onLoginSuccess({
-        id: userId,
-        username: usernamePart,
-        fullName,
-        role
-      }, `google-oauth-token-${user.uid}`);
-    } catch (err: any) {
-      if (err?.code === "auth/popup-closed-by-user" || err?.message?.includes("popup-closed-by-user") ||
-          err?.code === "auth/cancelled-popup-request" || err?.message?.includes("cancelled-popup-request")) {
-        console.warn("Google login popup closed or blocked by browser iframe policy:", err.message);
-        setError("FIREBASE_POPUP_CLOSED");
-      } else {
-        console.error("Google login failed", err);
-        // Route any Google login popup failure (blocked popups, auth/internal-error, unconfigured project, or unauthorized domain) 
-        // directly to the elegant Firebase oauth limitation display that provides copyable domains and simulation links.
-        setError("FIREBASE_OAUTH_RESTRICTION");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignInSimulated = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!simEmail || !simEmail.includes("@")) {
-      setError("Please input a valid simulated email address.");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const role: "admin" | "marketer" = "marketer"; // STRICT ENFORCEMENT: No Gmail can access admin
-      let sName = simName.trim() || "Simulated Google User";
-      const usernamePart = simEmail.split("@")[0] || "simulated_user";
-      let userId = `sim-google-${usernamePart}`;
-
-      try {
-        const marketers = await api.getMarketers();
-        const found = marketers.find(m => 
-          m.fullName.toLowerCase() === sName.toLowerCase() || 
-          m.businessName.toLowerCase() === sName.toLowerCase() ||
-          m.phone === simEmail
-        );
-
-        if (found) {
-          sName = found.fullName;
-          userId = found.id;
-        } else {
-          const uniqueStandNum = `G-${userId.substring(11, 15).toUpperCase()}`;
-          const newMkt = await api.registerMarketer({
-            fullName: sName,
-            businessName: `${sName}'s Merchant Stand`,
-            phone: simEmail,
-            standNumber: uniqueStandNum,
-            category: "General",
-            description: `Camp stand registered via simulated Google account (${simEmail}).`,
-            photo: `preset:${selectedPreset}`
-          });
-          userId = newMkt.id;
-          sName = newMkt.fullName;
-        }
-      } catch (e) {
-        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
-      }
-
-      onLoginSuccess({
-        id: userId,
-        username: usernamePart,
-        fullName: sName,
-        role
-      }, `simulated-oauth-token-${userId}`);
-    } catch (err: any) {
-      setError(err.message || "Unable to complete Gmail simulation.");
-    } finally {
-      setLoading(false);
-      setShowSimulator(false);
-    }
-  };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -548,140 +418,15 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </button>
               </form>
             </div>
-          ) : showSimulator ? (
-            /* Gmail simulation bypass screen */
-            <div className="space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSimulator(false);
-                    setError(null);
-                  }}
-                  className="text-slate-400 hover:text-slate-200 flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to login</span>
-                </button>
-                <div className="flex items-center gap-1 text-xs text-emerald-400 font-mono font-bold">
-                  <Mail className="w-4 h-4" />
-                  <span>Gmail Simulation</span>
-                </div>
-              </div>
-
-              <div className="bg-emerald-950/20 border border-emerald-500/20 p-3.5 rounded-xl text-[11px] text-slate-350 leading-relaxed font-sans">
-                This simulator mimics Google accounts callback. Moving forward with any <strong>@gmail.com</strong> address will log in as a <strong>Marketer</strong> with strict dashboard controls.
-              </div>
-
-              <form onSubmit={handleGoogleSignInSimulated} className="space-y-4">
-                <div>
-                  <label className="block text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
-                    Your Full Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Idris Dangalan"
-                    value={simName}
-                    onChange={(e) => setSimName(e.target.value)}
-                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-250 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
-                    Gmail Address / Google Account Info
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="e.g. dangalan20@gmail.com"
-                    value={simEmail}
-                    onChange={(e) => setSimEmail(e.target.value)}
-                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-250 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all disabled:opacity-50 mt-2"
-                >
-                  {loading ? "Authenticating simulated session..." : "Continue with Gmail Simulation"}
-                </button>
-              </form>
-            </div>
           ) : (
             /* Login Form */
             <>
               <div className="flex items-center gap-2 mb-6">
-                <KeyRound className="w-5 h-5 text-emerald-400" />
+                <KeyRound className="w-5 h-5 text-emerald-400" id="login-sec-icon" />
                 <h2 className="font-semibold text-slate-200">Security Access Gateway</h2>
               </div>
 
-              {error === "FIREBASE_OAUTH_RESTRICTION" ? (
-                <div className="mb-4 p-4 bg-amber-950/40 border border-amber-500/20 rounded-xl space-y-3 text-xs text-amber-300">
-                  <div className="flex items-start gap-2.5">
-                    <ShieldAlert className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-slate-250 text-[13px] mb-1">Firebase Domain Restriction</h4>
-                      <p className="leading-relaxed text-[11px] text-slate-350">
-                        The Firebase Auth Google popup is restricted inside this sandboxed iFrame dev domain. You can add these domains to your Authorized Domains list in the Firebase Console (Authentication &gt; Settings &gt; Authorized Domains):
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-950/75 p-2.5 rounded-lg font-mono text-[9px] text-emerald-450 border border-slate-850 select-all space-y-1 overflow-x-auto leading-normal">
-                    <div>{window.location.hostname}</div>
-                  </div>
-
-                  <div className="pt-2.5 border-t border-amber-500/10 flex flex-col gap-2">
-                    <p className="text-[10px] text-slate-400 font-sans">
-                      Or bypass the popup block and proceed with a simulated Google login Session:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSimulator(true);
-                        setError(null);
-                      }}
-                      className="w-full py-2.5 bg-amber-550 hover:bg-amber-450 text-slate-950 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all"
-                    >
-                      Bypass & Continue with Gmail Simulation
-                    </button>
-                  </div>
-                </div>
-              ) : error === "FIREBASE_POPUP_CLOSED" ? (
-                <div className="mb-4 p-4 bg-amber-950/40 border border-amber-500/20 rounded-xl space-y-3 text-xs text-amber-300">
-                  <div className="flex items-start gap-2.5">
-                    <ShieldAlert className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-slate-250 text-[13px] mb-1">Google Sign-In Cancelled / Closed</h4>
-                      <p className="leading-relaxed text-[11px] text-slate-350">
-                        The Google Authentication popup window was closed, cancelled or blocked by the browser's sandbox/iframe protection policy.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="pt-2.5 border-t border-amber-500/10 flex flex-col gap-2">
-                    <p className="text-[10px] text-slate-400 font-sans">
-                      No worries! Bypass the block and proceed instantly with a simulated Google login Session:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSimEmail("dangalan20@gmail.com");
-                        setSimName("Idris Dangalan");
-                        setShowSimulator(true);
-                        setError(null);
-                      }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-450 text-slate-950 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all cursor-pointer"
-                    >
-                      Bypass & Continue with Gmail Simulation
-                    </button>
-                  </div>
-                </div>
-              ) : error && (
+              {error && (
                 <div className="mb-4 p-3.5 bg-rose-950/50 border border-rose-500/30 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
                   <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>{error}</span>
@@ -691,28 +436,28 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
-                    Username / Registered Business Name
+                    Username / Registered Owner Name
                   </label>
                   <input
                     type="text"
-                    placeholder=""
+                    placeholder="e.g. Idris Dangalan"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-600"
+                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-650"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-slate-400 font-medium mb-1.5">
-                    Password / Registered Phone
+                    Password / Registered Phone Number
                   </label>
                   <input
                     type="password"
-                    placeholder=""
+                    placeholder="e.g. 08012345678"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-600"
+                    className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-sm p-3.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all placeholder:text-slate-650"
                     required
                   />
                 </div>
@@ -724,39 +469,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 >
                   {loading ? "Decrypting Credentials..." : "Authenticate Access"}
                 </button>
-
-                <div className="flex items-center my-4">
-                  <div className="flex-1 border-t border-slate-800"></div>
-                  <span className="px-3 text-[10px] uppercase tracking-wider text-slate-500 font-semibold font-mono">Or security provider</span>
-                  <div className="flex-1 border-t border-slate-800"></div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                  className="w-full py-3.5 bg-slate-950/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2.5 cursor-pointer transition-all disabled:opacity-50"
-                >
-                  <Mail className="w-4 h-4 text-emerald-400" />
-                  <span>{loading ? "Authenticating session..." : "Continue with Gmail (Google)"}</span>
-                </button>
-
-                <div className="text-center mt-3.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSimulator(true);
-                      setError(null);
-                    }}
-                    className="text-[10px] text-slate-500 hover:text-emerald-400 hover:underline transition-colors uppercase tracking-wider font-semibold font-mono"
-                  >
-                    ⚡ Iframe/Popup blocked? Skip to Gmail Simulator Bypass
-                  </button>
-                </div>
               </form>
 
               {/* Self Register CTA */}
-              <div className="mt-4 pt-3 border-t border-slate-800/40 text-center">
+              <div className="mt-6 pt-4 border-t border-slate-800/40 text-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -768,7 +484,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   New Marketer? Register Your Stand Here
                 </button>
               </div>
-
             </>
           )}
 
