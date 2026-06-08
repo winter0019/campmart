@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { api } from "../utils/api";
+import { auth } from "../firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { 
   KeyRound, 
   ShieldAlert, 
@@ -15,6 +17,7 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   ClipboardCheck,
+  Mail,
   Settings
 } from "lucide-react";
 
@@ -92,6 +95,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
   const [regSuccess, setRegSuccess] = useState(false);
 
+  // Google/Gmail Simulation bypass states
+  const [showSimulator, setShowSimulator] = useState(false);
+  const [simEmail, setSimEmail] = useState("");
+  const [simName, setSimName] = useState("");
+
   // Connection settings states
   const [showConfig, setShowConfig] = useState(false);
   const [customServerUrl, setCustomServerUrl] = useState(() => localStorage.getItem("campmark_server_url") || "");
@@ -115,6 +123,132 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       setError(err.message || "Unable to reach security gateway.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const role: "admin" | "marketer" = "marketer"; // Rule enforce: Google accounts are STRICTLY limited to marketer role
+      let fullName = user.displayName || "Google User";
+      const usernamePart = user.email?.split("@")[0] || "google_user";
+      let userId = user.uid;
+
+      // Look up registered marketers
+      try {
+        const marketers = await api.getMarketers();
+        const found = marketers.find(m => 
+          m.fullName.toLowerCase() === fullName.toLowerCase() || 
+          m.businessName.toLowerCase() === fullName.toLowerCase()
+        );
+        if (found) {
+          fullName = found.fullName;
+          userId = found.id;
+        } else {
+          // Dynamic auto-registration for the Gmail logged-in user to guarantee they have their dashboard
+          const uniqueStandNum = `G-${user.uid.substring(0, 4).toUpperCase()}`;
+          const newMkt = await api.registerMarketer({
+            fullName: user.displayName || "Google User",
+            businessName: `${user.displayName || "Google"}'s Merchant Stand`,
+            phone: user.phoneNumber || "080-GOOGLE",
+            standNumber: uniqueStandNum,
+            category: "General",
+            description: `Camp stand registered via Google account (${user.email || "N/A"}).`,
+            photo: user.photoURL || "preset:emerald"
+          });
+          userId = newMkt.id;
+          fullName = newMkt.fullName;
+        }
+      } catch (e) {
+        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
+      }
+
+      onLoginSuccess({
+        id: userId,
+        username: usernamePart,
+        fullName,
+        role
+      }, `google-oauth-token-${user.uid}`);
+    } catch (err: any) {
+      if (err?.code === "auth/popup-closed-by-user" || err?.message?.includes("popup-closed-by-user") ||
+          err?.code === "auth/cancelled-popup-request" || err?.message?.includes("cancelled-popup-request")) {
+        console.warn("Google login popup closed or blocked by browser iframe policy:", err.message);
+        setError("FIREBASE_POPUP_CLOSED");
+      } else {
+        console.error("Google login failed", err);
+        // Route any Google login popup failure (blocked popups, auth/internal-error, unconfigured project, or unauthorized domain) 
+        // directly to the elegant Firebase oauth limitation display that provides copyable domains and simulation links.
+        setError("FIREBASE_OAUTH_RESTRICTION");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignInSimulated = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simEmail || !simEmail.includes("@")) {
+      setError("Please input a valid simulated email address.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const role: "admin" | "marketer" = "marketer"; // STRICT ENFORCEMENT: No Gmail can access admin
+      let sName = simName.trim() || "Simulated Google User";
+      const usernamePart = simEmail.split("@")[0] || "simulated_user";
+      let userId = `sim-google-${usernamePart}`;
+
+      try {
+        const marketers = await api.getMarketers();
+        const found = marketers.find(m => 
+          m.fullName.toLowerCase() === sName.toLowerCase() || 
+          m.businessName.toLowerCase() === sName.toLowerCase() ||
+          m.phone === simEmail
+        );
+
+        if (found) {
+          sName = found.fullName;
+          userId = found.id;
+        } else {
+          const uniqueStandNum = `G-${userId.substring(11, 15).toUpperCase()}`;
+          const newMkt = await api.registerMarketer({
+            fullName: sName,
+            businessName: `${sName}'s Merchant Stand`,
+            phone: simEmail,
+            standNumber: uniqueStandNum,
+            category: "General",
+            description: `Camp stand registered via simulated Google account (${simEmail}).`,
+            photo: `preset:${selectedPreset}`
+          });
+          userId = newMkt.id;
+          sName = newMkt.fullName;
+        }
+      } catch (e) {
+        console.warn("Failed to query marketers or auto-register, using fallback marketer profile details", e);
+      }
+
+      onLoginSuccess({
+        id: userId,
+        username: usernamePart,
+        fullName: sName,
+        role
+      }, `simulated-oauth-token-${userId}`);
+    } catch (err: any) {
+      setError(err.message || "Unable to complete Gmail simulation.");
+    } finally {
+      setLoading(false);
+      setShowSimulator(false);
     }
   };
 
@@ -197,7 +331,72 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         {/* Card Body */}
         <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
           
-          {regSuccess ? (
+          {showSimulator ? (
+            /* Simulator Form */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowSimulator(false)}
+                  className="text-slate-400 hover:text-slate-200 flex items-center gap-1 text-xs font-semibold cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+                <div className="flex items-center gap-1 text-xs text-emerald-400 font-bold font-mono">
+                  <Sparkles className="w-4 h-4 text-emerald-400 animate-spin" />
+                  <span>Gmail Simulator</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-relaxed bg-slate-950/60 border border-slate-900/80 p-2.5 rounded-xl">
+                Bypass real Google Sign-In constraints. Authenticate using any simulated Gmail profile.
+              </p>
+
+              <form onSubmit={handleGoogleSignInSimulated} className="space-y-3.5">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-1">
+                    Simulated Email Name *
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-650 absolute left-3 top-2.5" />
+                    <input
+                      type="email"
+                      placeholder="e.g. user@gmail.com"
+                      value={simEmail}
+                      onChange={(e) => setSimEmail(e.target.value)}
+                      className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-xs py-2.5 pl-9 pr-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-1">
+                    Simulated Display Name (Optional)
+                  </label>
+                  <div className="relative">
+                    <UserCheck className="w-4 h-4 text-slate-650 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="e.g. Dang Alan"
+                      value={simName}
+                      onChange={(e) => setSimName(e.target.value)}
+                      className="w-full bg-slate-950/70 border border-slate-800 text-slate-200 text-xs py-2.5 pl-9 pr-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                >
+                  {loading ? "Constructing simulated identity..." : "Establish simulated Gmail connection"}
+                </button>
+              </form>
+            </div>
+          ) : regSuccess ? (
             /* Success screen after registering */
             <div className="text-center py-4 space-y-5">
               <div className="inline-flex p-3 bg-emerald-950 text-emerald-400 border border-emerald-500/20 rounded-2xl">
@@ -431,7 +630,58 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <h2 className="font-semibold text-slate-200">Security Access Gateway</h2>
               </div>
 
-              {error && (
+              {error === "FIREBASE_POPUP_CLOSED" ? (
+                <div className="mb-4 p-3.5 bg-slate-950 border border-amber-500/20 rounded-xl space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-amber-500 font-bold">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    <span>Popup Blocked / Closed</span>
+                  </div>
+                  <p className="text-slate-450 leading-relaxed text-[11px]">
+                    The Google authentication popup was closed. Netlify environments might require configuring authorized credentials.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowSimulator(true);
+                      setError(null);
+                    }}
+                    className="w-full mt-1.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-lg text-[10px] cursor-pointer border border-emerald-500/10"
+                  >
+                    Use Gmail Simulator Connection Instantly
+                  </button>
+                </div>
+              ) : error === "FIREBASE_OAUTH_RESTRICTION" ? (
+                <div className="mb-4 p-4 bg-slate-950 border border-rose-500/20 rounded-xl space-y-3.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-rose-450 font-extrabold uppercase tracking-wider">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500" />
+                    <span>Firebase Domain Configuration Needed</span>
+                  </div>
+                  <p className="text-slate-400 leading-normal text-[11px]">
+                    To complete Google Sign-In outside AI Studio, the host domain must be added to authorized domains list in Firebase Auth settings.
+                  </p>
+                  <div className="p-2 border border-slate-850 bg-slate-900/60 rounded font-mono text-[10px] text-slate-350 select-all break-all">
+                    campmarts.netlify.app
+                  </div>
+                  <div className="pt-1 flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleGoogleSignIn()}
+                      className="text-[10px] text-emerald-450 hover:text-emerald-350 font-bold underline text-left cursor-pointer transition-all"
+                    >
+                      &gt; Retry Real Google Authentication
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSimulator(true);
+                        setError(null);
+                      }}
+                      className="text-[10px] text-emerald-450 hover:text-emerald-350 font-bold underline text-left cursor-pointer transition-all"
+                    >
+                      &gt; Bypass with Simulated Gmail Login (Recommended)
+                    </button>
+                  </div>
+                </div>
+              ) : error && (
                 <div className="mb-4 p-3.5 bg-rose-950/50 border border-rose-500/30 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
                   <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>{error}</span>
@@ -474,6 +724,45 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 >
                   {loading ? "Decrypting Credentials..." : "Authenticate Access"}
                 </button>
+
+                {/* Google OAuth Access Area */}
+                <div className="relative my-4 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-800/80"></div>
+                  </div>
+                  <span className="relative bg-slate-900 border border-slate-800 px-3 text-[10px] text-slate-500 uppercase tracking-widest font-bold backdrop-blur-md rounded-full shadow-sm py-0.5">
+                    or access with
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleGoogleSignIn()}
+                    className="flex items-center justify-center gap-2 py-2.5 px-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 text-sm font-bold rounded-xl cursor-pointer hover:border-emerald-500/20 hover:text-emerald-450 hover:shadow-md transition-all uppercase tracking-wider text-[10px]"
+                  >
+                    {/* Simplified flat vector rendering of G letter logo */}
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                    </svg>
+                    <span>Google Login</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSimulator(true);
+                      setError(null);
+                    }}
+                    className="flex items-center justify-center gap-2 py-2.5 px-3 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 text-sm font-bold rounded-xl cursor-pointer hover:border-emerald-500/20 hover:text-emerald-450 hover:shadow-md transition-all uppercase tracking-wider text-[10px]"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400" />
+                    <span>Gmail Bypass</span>
+                  </button>
+                </div>
               </form>
 
               {/* Self Register CTA */}

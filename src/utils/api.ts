@@ -76,13 +76,9 @@ async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | unde
 
 // dynamic API endpoint resolver
 export function getApiUrl(path: string): string {
-  let savedUrl = localStorage.getItem("campmark_server_url");
+  const savedUrl = localStorage.getItem("campmark_server_url");
   if (savedUrl) {
-    let cleanUrl = savedUrl.trim().replace(/\/+$/, "");
-    if (cleanUrl.includes("ais-dev-")) {
-      cleanUrl = cleanUrl.replace("ais-dev-", "ais-pre-");
-      localStorage.setItem("campmark_server_url", cleanUrl);
-    }
+    const cleanUrl = savedUrl.replace(/\/+$/, "");
     return `${cleanUrl}${path}`;
   }
 
@@ -91,8 +87,8 @@ export function getApiUrl(path: string): string {
     return path;
   }
   
-  // Default to active public preview environment containing modern server edits.
-  return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
+  // Default to active development workspace containing modern server edits.
+  return `https://ais-dev-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
 }
 
 // Proxies remote image URLs through the same-origin backend to prevent CORS security errors with canvas/html2canvas
@@ -113,8 +109,7 @@ export const api = {
     const response = await fetch(getApiUrl("/api/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-      credentials: "include"
+      body: JSON.stringify({ username, password })
     });
 
     if (!response.ok) {
