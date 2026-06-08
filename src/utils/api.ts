@@ -54,20 +54,20 @@ async function uploadPhotoStorageIfNeeded(entityId: string, photo: string | unde
       
       await withTimeout(
         uploadString(storageRef, photo, "data_url", { contentType: mimeType }),
-        9000,
+        1500,
         "Storage string upload"
       );
       
       const downloadURL = await withTimeout(
         getDownloadURL(storageRef),
-        6000,
+        1000,
         "Storage download URL retrieval"
       );
       
       console.log(`Uploaded photo to storage for ${entityId}: ${downloadURL}`);
       return downloadURL;
     } catch (err) {
-      console.error("Failed to upload photo to Firebase Storage, using base64 fallback:", err);
+      console.warn("Failed to upload photo to Firebase Storage, using base64 fallback:", err);
       return photo;
     }
   }
@@ -86,7 +86,9 @@ export function getApiUrl(path: string): string {
   if (host.includes("run.app") || host.includes("localhost:3000") || host.includes("127.0.0.1:3000")) {
     return path;
   }
-  return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
+  
+  // Default to active development workspace containing modern server edits.
+  return `https://ais-dev-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
 }
 
 // Proxies remote image URLs through the same-origin backend to prevent CORS security errors with canvas/html2canvas
