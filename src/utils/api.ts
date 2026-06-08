@@ -87,8 +87,8 @@ export function getApiUrl(path: string): string {
     return path;
   }
   
-  // Default to active development workspace containing modern server edits.
-  return `https://ais-dev-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
+  // Default to active public preview environment containing modern server edits.
+  return `https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app${path}`;
 }
 
 // Proxies remote image URLs through the same-origin backend to prevent CORS security errors with canvas/html2canvas

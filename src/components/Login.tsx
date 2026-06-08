@@ -14,7 +14,8 @@ import {
   UploadCloud, 
   ArrowLeft, 
   CheckCircle2, 
-  ClipboardCheck
+  ClipboardCheck,
+  Settings
 } from "lucide-react";
 
 interface LoginProps {
@@ -90,6 +91,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [selectedPreset, setSelectedPreset] = useState("emerald");
   const [uploadedBase64, setUploadedBase64] = useState<string | null>(null);
   const [regSuccess, setRegSuccess] = useState(false);
+
+  // Connection settings states
+  const [showConfig, setShowConfig] = useState(false);
+  const [customServerUrl, setCustomServerUrl] = useState(() => localStorage.getItem("campmark_server_url") || "");
 
 
 
@@ -483,6 +488,47 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 >
                   New Marketer? Register Your Stand Here
                 </button>
+              </div>
+
+              {/* Advanced Config */}
+              <div className="mt-4 pt-3 border-t border-slate-900 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowConfig(!showConfig)}
+                  className="text-[10px] text-slate-550 hover:text-slate-350 font-medium tracking-wide flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                >
+                  <Settings className="w-3 h-3" />
+                  <span>Connection Settings</span>
+                </button>
+
+                {showConfig && (
+                  <div className="mt-3.5 text-left p-3.5 bg-slate-950/80 border border-slate-850 rounded-xl space-y-2">
+                    <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">
+                      API Server Base URL
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="Default system host"
+                      value={customServerUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomServerUrl(val);
+                        if (val.trim()) {
+                          localStorage.setItem("campmark_server_url", val.trim());
+                        } else {
+                          localStorage.removeItem("campmark_server_url");
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <p className="text-[9px] text-slate-500 leading-normal">
+                      Leave blank to use pre-configured public backup channel:
+                      <span className="font-mono text-emerald-500/60 select-all block mt-1 break-all bg-slate-950 p-1.5 rounded border border-slate-900">
+                        https://ais-pre-qt7dsgacndhinsmr4bg5cf-10883856286.europe-west1.run.app
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           )}
