@@ -305,79 +305,83 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                 {/* 1. FRONT OF BADGE CARD */}
                 <div className="bg-white border border-slate-200/90 rounded-[18px] overflow-hidden aspect-[1/1.58] shadow-[0_4px_16px_rgba(0,0,0,0.06)] relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
-                  {/* Outer security stripe */}
-                  <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+                  {/* Top wave design */}
+                  <div className="h-[140px] relative w-full bg-slate-100 overflow-hidden select-none shrink-0 border-b border-slate-100">
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 140" preserveAspectRatio="none" fill="none">
+                      <path d="M0,0 L300,0 L300,115 Q200,140 100,105 T0,125 Z" fill="#60a5fa" opacity="0.35" />
+                      <path d="M0,0 L300,0 L300,102 Q220,128 120,90 T0,112 Z" fill="#1e3a8a" />
+                      <path d="M0,0 L300,0 L300,88 Q240,110 150,80 T0,98 Z" fill="#ec4899" />
+                    </svg>
+                    
+                    <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white drop-shadow-sm">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5.5 h-5.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 flex items-center justify-center">
+                          <Award className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-[10px] uppercase tracking-widest font-black leading-none font-sans">NYSC MARKET</span>
+                      </div>
+                      <span className="text-[8px] font-black font-mono bg-white/15 backdrop-blur-md border border-white/20 py-0.5 px-2 rounded-full uppercase tracking-wider text-rose-100">
+                        ZONE 1-A
+                      </span>
+                    </div>
 
-                  {/* Header overlay badge card */}
-                  <div className="pt-6 px-6 pb-4 flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80">
-                    <div className="flex items-center gap-1.5">
-                      <Building className="w-4 h-4 text-emerald-600" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider font-sans">NYSC KATSINA CAMP MARKET</span>
-                        <span className="text-[7.2px] font-bold text-slate-400 font-mono tracking-tight uppercase">CAMP MARKET & VENDOR ACCESS CLEARANCE</span>
+                    {/* Floating Profile Image wrapped in white ring */}
+                    <div className="absolute bottom-[-45px] left-1/2 -translate-x-1/2 z-10">
+                      <div className="w-24 h-24 rounded-full border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                        {getPresetGradient(currentEntity.photo) ? (
+                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative flex items-center justify-center font-bold text-slate-950 text-xl uppercase`}>
+                            {currentEntity.name.slice(0, 2)}
+                          </div>
+                        ) : (
+                          <img 
+                            src={currentEntity.photo} 
+                            alt={currentEntity.name} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
                       </div>
                     </div>
-                    <span className="text-[9.5px] font-black font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/20 py-0.5 px-2 rounded">
-                      ZONE 1-A
-                    </span>
                   </div>
 
                   {/* Body details of badge front */}
-                  <div className="p-6 flex-1 flex flex-col items-center justify-center gap-4 text-center">
+                  <div className="pt-13 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
                     
-                    {/* User Profile Frame */}
-                    <div className="relative group">
-                      <div className="absolute -inset-1 bg-gradient-to-tr from-emerald-500 to-blue-500 rounded-2xl blur-sm opacity-20 group-hover:opacity-35 transition-opacity" />
-                      
-                      {getPresetGradient(currentEntity.photo) ? (
-                        <div className={`w-28 h-28 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative shadow flex items-center justify-center font-bold text-slate-950 text-3xl border border-slate-200 font-sans uppercase`}>
-                          {currentEntity.business.slice(0, 2)}
-                        </div>
-                      ) : (
-                        <img 
-                          src={currentEntity.photo} 
-                          alt={currentEntity.name} 
-                          className="w-28 h-28 rounded-2xl object-cover relative border border-slate-200 shadow-md"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
-                    </div>
-
-                    {/* Person Credentials and metadata */}
-                    <div className="space-y-1.5 w-full px-2 text-center">
-                      <h4 className="text-base font-black text-black tracking-tight uppercase leading-snug">
+                    {/* Name & Role block */}
+                    <div className="space-y-1 w-full text-center">
+                      <h4 className="text-base font-extrabold text-slate-900 tracking-tight uppercase leading-tight">
                         {currentEntity.name}
                       </h4>
-                      
-                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-200 mt-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-700 font-bold">
-                          {currentEntity.role}
-                        </span>
-                      </div>
-
-                      <div className="mt-2.5 space-y-0.5">
-                        <p className="text-[11px] text-black font-black uppercase tracking-wide">
-                          TRADE: {currentEntity.category}
-                        </p>
-                        <p className="text-[10px] text-slate-600 font-medium truncate">
-                          Merchant: {currentEntity.business}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Foot layout card */}
-                  <div className="px-6 py-5 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex flex-col text-left">
-                      <span className="text-[7.5px] uppercase tracking-wider text-slate-400 font-bold">Assigned Stalls</span>
-                      <strong className="text-slate-900 mt-0.5 text-sm uppercase">Stand {currentEntity.stand}</strong>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#1e3a8a]">
+                        {currentEntity.role}
+                      </p>
                     </div>
 
-                    {/* ID Badge number bottom line  */}
-                    <div className="flex flex-col text-right">
-                      <span className="text-[7.5px] uppercase tracking-wider text-slate-400 font-bold">Operator ID No</span>
-                      <strong className="font-mono text-emerald-600 mt-0.5 text-xs font-bold">{currentEntity.id}</strong>
+                    {/* Details Rows */}
+                    <div className="my-2 py-2 px-3 bg-slate-50 border-y border-slate-105 flex flex-col gap-1.5 text-[10px] text-left rounded-lg">
+                      <div className="flex justify-between items-center text-slate-605">
+                        <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">ID NO:</span>
+                        <span className="font-mono font-extrabold text-slate-900">{currentEntity.id}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-605">
+                        <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">STALL NUMBER:</span>
+                        <span className="font-extrabold text-slate-900 uppercase">Stand {currentEntity.stand}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-605">
+                        <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">TRADE CATEGORY:</span>
+                        <span className="font-extrabold text-[#111827] uppercase truncate max-w-[125px]">{currentEntity.category}</span>
+                      </div>
+                    </div>
+
+                    {/* QR Code bottom alignment */}
+                    <div className="flex justify-center items-center pb-1">
+                      <div 
+                        onClick={() => setShowQRModal(true)}
+                        className="p-1 bg-white rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 hover:scale-105 transition-all w-11 h-11 flex items-center justify-center"
+                        title="Click to scan and view details"
+                      >
+                        <QrCode className="w-8 h-8 text-slate-900" style={{ strokeWidth: 1.5 }} />
+                      </div>
                     </div>
                   </div>
 
@@ -386,64 +390,55 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                 {/* 2. BACK OF BADGE CARD */}
                 <div className="bg-white border border-slate-200/90 rounded-[18px] overflow-hidden aspect-[1/1.58] shadow-[0_4px_16px_rgba(0,0,0,0.06)] relative flex flex-col justify-between font-sans print:border-slate-300 w-full max-w-xs sm:max-w-sm mx-auto">
                   
-                  {/* Decorative Magnetic Tape */}
-                  <div className="h-10 bg-slate-900 shrink-0 mt-6 relative flex items-center px-6">
-                    <span className="text-[6.5px] font-mono text-slate-400 tracking-widest font-bold">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
-                  </div>
-
-                  <div className="px-6 py-4 flex-1 flex flex-col justify-between gap-4 mt-2">
+                  {/* Top wave design back side */}
+                  <div className="h-[90px] relative w-full bg-slate-100 overflow-hidden select-none shrink-0 border-b border-slate-100">
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 90" preserveAspectRatio="none" fill="none">
+                      <path d="M0,0 L300,0 L300,72 Q200,90 100,60 T0,76 Z" fill="#60a5fa" opacity="0.35" />
+                      <path d="M0,0 L300,0 L300,62 Q220,80 120,50 T0,66 Z" fill="#1e3a8a" />
+                      <path d="M0,0 L300,0 L300,52 Q240,68 150,44 T0,56 Z" fill="#ec4899" />
+                    </svg>
                     
-                    {/* Legal security disclaimer lines */}
-                    <div className="space-y-2 text-[8px] text-slate-500 leading-normal font-sans border-b border-slate-100 pb-4 text-left">
-                      <p>
-                        This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of the general camp administration.
-                      </p>
-                      <p>
-                        Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to full clearance revocation.
-                      </p>
-                      <div className="flex justify-between font-mono text-[7px] text-slate-400 mt-3 pt-2">
-                        <span>ISSUED ON: {new Date(currentEntity.createdAt).toLocaleDateString()}</span>
-                        <span>SECURITY REF: CP-Z1</span>
-                      </div>
+                    <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white">
+                      <span className="text-[9px] uppercase tracking-widest font-black leading-none font-sans">TERMS & CONDITIONS</span>
+                      <span className="text-[7px] font-mono bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider text-rose-100">REF: CP-Z1</span>
                     </div>
-
-                    {/* Signature and Verification section */}
-                    <div className="flex items-center justify-between gap-3">
-                      
-                      {/* Interactive dynamic SVG QR representation */}
-                      <div 
-                        onClick={() => setShowQRModal(true)}
-                        className="p-1.5 bg-white rounded-xl shrink-0 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all hover:scale-110 active:scale-95 group relative"
-                        title="Click to scan and view details"
-                      >
-                        <QrCode className="w-12 h-12 text-slate-900 group-hover:text-emerald-600 transition-colors" style={{ strokeWidth: 1.5 }} />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-slate-950" />
-                      </div>
-
-                      {/* Signature simulation */}
-                      <div className="flex-1 flex flex-col items-end text-right">
-                        <div className="font-mono text-[7.5px] text-slate-400 uppercase tracking-widest">Head of Camp Market</div>
-                        <span className="text-slate-800 mt-1 mr-2 text-xs font-serif italic select-none opacity-85 tracking-widest font-bold">
-                          Idris Dangalan
-                        </span>
-                        <div className="w-24 h-[1px] bg-slate-200 mt-0.5" />
-                        <span className="text-[7.5px] text-slate-400 mt-1 uppercase tracking-wider">Audit Signature Verified</span>
-                      </div>
-                    </div>
-
                   </div>
 
-                  {/* Bottom bar represent security protocols */}
-                  <div className="py-4 bg-slate-50/90 border-t border-slate-100 flex flex-col items-center justify-center font-mono">
-                    <div className="text-[6.5px] text-emerald-600 font-black tracking-widest uppercase">
-                      CAMP CODE CERTIFICATE CLEARANCE ACTIVATED
+                  <div className="px-5 py-3 flex-1 flex flex-col justify-between gap-3 text-left">
+                    <div>
+                      <h5 className="text-[9px] font-black uppercase tracking-wider text-[#1e3a8a] mb-1.5">ATTENTION & POLICY</h5>
+                      <ul className="space-y-1 text-[8px] text-slate-500 leading-normal font-sans">
+                        <li className="flex items-start gap-1">
+                          <span className="text-[#ec4899] font-bold">•</span>
+                          <span>This credential is an official delegation for NYSC Katsina Camp Market permission. It remains the property of camp administration.</span>
+                        </li>
+                        <li className="flex items-start gap-1">
+                          <span className="text-[#ec4899] font-[900]">•</span>
+                          <span>Bearer must showcase this identifier badge at checkpoints. Alteration or replication is subject to clearance revocation.</span>
+                        </li>
+                        <li className="flex items-start gap-1">
+                          <span className="text-[#ec4899] font-bold">•</span>
+                          <span>For status verification, scan the dynamic QR Code located on the front of this security card.</span>
+                        </li>
+                      </ul>
                     </div>
-                    {/* Fake barcode lines representation */}
-                    <div className="flex gap-[1.5px] h-3.5 mt-2 opacity-60 pb-1">
-                      {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2].map((w, idx) => (
-                        <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
-                      ))}
+
+                    {/* VALIDITY DATES */}
+                    <div className="border-t border-slate-100 pt-2 text-center">
+                      <span className="block text-[6.5px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
+                      <strong className="text-rose-600 uppercase text-[10px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
+                      <p className="text-[7px] text-slate-400">If found, please return to NYSC Camp Secretariat.</p>
+                    </div>
+
+                    {/* Bottom delegation credentials */}
+                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-50">
+                      <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-205 flex items-center justify-center shrink-0">
+                        <Award className="w-3 h-3 text-[#ec4899]" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className="text-[7.5px] uppercase tracking-wider text-slate-800 font-black leading-tight">CAMP ADMINISTRATION</span>
+                        <span className="text-[6.5px] text-slate-400 font-medium font-sans leading-none">Under supervision of Idris Dangalan</span>
+                      </div>
                     </div>
                   </div>
 
@@ -572,121 +567,148 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center justify-center max-w-2xl mx-auto">
                 {/* 1. FRONT BADGE CARD PREVIEW */}
-                <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
-                  {/* Emerald glow top banner strip */}
-                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
-                  
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mt-1.5 bg-slate-50/50 p-1 rounded">
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-850">NYSC KATSINA CAMP</span>
-                    <span className="text-[8px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-3 text-center my-auto">
-                    {/* Photo */}
-                    {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
-                      <div className="relative">
-                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-60 blur-sm" />
-                        <img 
-                          src={currentEntity.photo} 
-                          alt={currentEntity.name} 
-                          className="w-24 h-24 rounded-2xl object-cover relative border border-slate-200 z-10" 
-                        />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-550 opacity-80 blur-sm" />
-                        <div className={`w-24 h-24 rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
-                          {currentEntity.name.slice(0, 2)}
+                <div className="bg-white text-slate-900 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
+                  {/* Top wave design */}
+                  <div className="h-[140px] relative w-full bg-slate-105 overflow-hidden select-none shrink-0 border-b border-slate-100">
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 140" preserveAspectRatio="none" fill="none">
+                      <path d="M0,0 L300,0 L300,115 Q200,140 100,105 T0,125 Z" fill="#60a5fa" opacity="0.35" />
+                      <path d="M0,0 L300,0 L300,102 Q220,128 120,90 T0,112 Z" fill="#1e3a8a" />
+                      <path d="M0,0 L300,0 L300,88 Q240,110 150,80 T0,98 Z" fill="#ec4899" />
+                    </svg>
+                    
+                    <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white drop-shadow-sm">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5.5 h-5.5 rounded-full bg-white/11 backdrop-blur-md border border-white/30 flex items-center justify-center">
+                          <Award className="w-3.5 h-3.5 text-white" />
                         </div>
+                        <span className="text-[10px] uppercase tracking-widest font-black leading-none font-sans">NYSC MARKET</span>
                       </div>
-                    )}
+                      <span className="text-[8px] font-black font-mono bg-white/11 backdrop-blur-md border border-white/20 py-0.5 px-2 rounded-full uppercase tracking-wider text-rose-100">
+                        ZONE 1-A
+                      </span>
+                    </div>
 
-                    <div className="space-y-1 text-center">
-                      <h4 className="text-sm font-black uppercase tracking-tight text-black">
-                        {currentEntity.name.toUpperCase()}
-                      </h4>
-                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[9px] font-mono font-bold uppercase tracking-wider text-slate-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {currentEntity.role}
-                      </div>
-                      
-                      <div className="mt-2 space-y-0.5">
-                        <p className="text-[10px] text-black font-black uppercase tracking-wide">
-                          TRADE: {currentEntity.category}
-                        </p>
-                        <p className="text-[9.5px] text-slate-500 font-semibold truncate">Merchant: {currentEntity.business}</p>
+                    {/* Floating Profile Image wrapped in white ring */}
+                    <div className="absolute bottom-[-36px] left-1/2 -translate-x-1/2 z-10">
+                      <div className="w-22 h-22 rounded-full border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                        {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                          <img 
+                            src={currentEntity.photo} 
+                            alt={currentEntity.name} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
+                            {currentEntity.name.slice(0, 2)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
-                    <div className="text-left">
-                      <span className="block text-[7px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
-                      <strong className="text-slate-850 uppercase text-[10px] font-extrabold">Stand {currentEntity.stand}</strong>
+                  <div className="pt-11 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
+                    {/* Name */}
+                    <div className="space-y-0.5 text-center mt-2">
+                      <h4 className="text-sm font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
+                        {currentEntity.name}
+                      </h4>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-[#1e3a8a]">
+                        {currentEntity.role}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <span className="block text-[7px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
-                      <strong className="font-mono text-emerald-600 text-[10.5px] font-extrabold">{currentEntity.id}</strong>
+
+                    {/* Information block */}
+                    <div className="my-1.5 py-2 px-3 bg-slate-50 border-y border-slate-100 flex flex-col gap-1.5 text-[9px] text-left rounded-lg">
+                      <div className="flex justify-between items-center bg-slate-50">
+                        <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">ID NO:</span>
+                        <span className="font-mono font-extrabold text-[#111827]">{currentEntity.id}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-50">
+                        <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">STALL NUMBER:</span>
+                        <span className="font-extrabold text-[#111827] uppercase">Stand {currentEntity.stand}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-50">
+                        <span className="text-[7.5px] uppercase font-bold text-slate-400 tracking-wider">TRADE CATEGORY:</span>
+                        <span className="font-extrabold text-[#111827] uppercase truncate max-w-[124px]">{currentEntity.category}</span>
+                      </div>
+                    </div>
+
+                    {/* QR Code in preview */}
+                    <div className="flex justify-center items-center pb-0.5">
+                      <div className="p-0.5 bg-white rounded-lg border border-slate-200 shadow-sm w-8 h-8 flex items-center justify-center">
+                        <QrCode className="w-6 h-6 text-slate-900" style={{ strokeWidth: 1.5 }} />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* 2. BACK BADGE CARD PREVIEW */}
-                <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
-                  {/* Magnetic strip mock */}
-                  <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
-                    <span className="text-[6px] font-mono text-slate-400 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+                <div className="bg-white text-slate-900 rounded-[18px] border border-slate-200/90 relative flex flex-col justify-between w-full aspect-[1/1.58] max-w-[300px] h-[470px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
+                  {/* Top wave design back side */}
+                  <div className="h-[90px] relative w-full bg-slate-100 overflow-hidden select-none shrink-0 border-b border-slate-100">
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 90" preserveAspectRatio="none" fill="none">
+                      <path d="M0,0 L300,0 L300,72 Q200,90 100,60 T0,76 Z" fill="#60a5fa" opacity="0.35" />
+                      <path d="M0,0 L300,0 L300,62 Q220,80 120,50 T0,66 Z" fill="#1e3a8a" />
+                      <path d="M0,0 L300,0 L300,52 Q240,68 150,44 T0,56 Z" fill="#ec4899" />
+                    </svg>
+                    
+                    <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white">
+                      <span className="text-[9px] uppercase tracking-widest font-black leading-none font-sans">TERMS & CONDITIONS</span>
+                      <span className="text-[7px] font-mono bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider text-rose-100">REF: CP-Z1</span>
+                    </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col justify-between mt-12 text-left">
-                    {/* Disclaimer */}
-                    <div className="space-y-2 text-[7.5px] text-slate-550 leading-relaxed border-b border-slate-100 pb-3">
-                      <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
-                      <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
-                      <div className="flex justify-between font-mono text-[6.5px] text-slate-400 pt-1">
-                        <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
-                        <span>REF: CP-Z1</span>
-                      </div>
+                  <div className="px-5 py-3 flex-1 flex flex-col justify-between gap-2.5 text-left">
+                    <div>
+                      <h5 className="text-[8.5px] font-black uppercase tracking-wider text-[#1e3a8a] mb-1">ATTENTION & POLICY</h5>
+                      <ul className="space-y-1 text-[7.5px] text-slate-500 leading-normal font-sans">
+                        <li className="flex items-start gap-1">
+                          <span className="text-[#ec4899] font-bold">•</span>
+                          <span>This credential is an official delegation for NYSC Katsina Camp Market permission. It remains the property of camp administration.</span>
+                        </li>
+                        <li className="flex items-start gap-1">
+                          <span className="text-[#ec4899] font-bold">•</span>
+                          <span>Bearer must showcase this identifier badge at checkpoints. Alteration or replication is subject to clearance revocation.</span>
+                        </li>
+                      </ul>
                     </div>
 
-                    {/* Signature and barcode items */}
-                    <div className="flex items-center justify-between gap-4 py-2 mt-auto">
-                      <div className="p-1 bg-white rounded-lg border border-slate-205 w-10 h-10 flex items-center justify-center shrink-0">
+                    {/* VALIDITY EXPIRY */}
+                    <div className="border-t border-slate-100 pt-2 text-center">
+                      <span className="block text-[6px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
+                      <strong className="text-rose-600 uppercase text-[9px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
+                      <p className="text-[6.5px] text-slate-450">If found, please return to NYSC Camp Secretariat.</p>
+                    </div>
+
+                    {/* Bottom delegation stats */}
+                    <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
+                      <div className="p-0.5 bg-white rounded border border-slate-200 w-8 h-8 flex items-center justify-center shrink-0">
                         <div className="grid grid-cols-4 gap-0.5 w-full h-full p-0.5">
-                          <div className="bg-slate-900 rounded-xs" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                           <div className="bg-transparent" />
-                          <div className="bg-slate-900 rounded-xs" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                           <div className="bg-transparent" />
-                          <div className="bg-slate-900 rounded-xs" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                           <div className="bg-transparent" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                           <div className="bg-transparent" />
-                          <div className="bg-slate-900 rounded-xs" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                           <div className="bg-transparent" />
-                          <div className="bg-slate-900 rounded-xs" />
-                          <div className="bg-slate-900 rounded-xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
+                          <div className="bg-slate-900 rounded-2xs" />
                         </div>
                       </div>
 
                       <div className="text-right flex-1">
-                        <span className="block text-[7px] text-slate-450 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
-                        <span className="text-slate-800 font-serif italic tracking-widest text-[10px] block mt-1 font-bold">Idris Dangalan</span>
-                        <div className="w-14 h-[1px] bg-slate-200 ml-auto mt-0.5" />
-                        <span className="text-[7px] text-slate-400 uppercase block mt-0.5 leading-none">Signature Verified</span>
+                        <span className="block text-[6.5px] text-slate-450 uppercase font-mono font-bold leading-none">HEAD OF CAMP MARKET</span>
+                        <span className="text-slate-800 font-serif italic tracking-widest text-[8.5px] block mt-0.5 font-bold">Idris Dangalan</span>
+                        <div className="w-12 h-[1px] bg-slate-200 ml-auto mt-0.5" />
+                        <span className="text-[6px] text-slate-400 uppercase block mt-0.5 leading-none">Signature Verified</span>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="py-2 mt-auto border-t border-slate-100 text-center flex flex-col items-center">
-                    <span className="text-[6px] text-emerald-600 font-black tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
-                    <div className="flex gap-[1px] h-3 mt-1.5 opacity-60">
-                      {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2].map((w, idx) => (
-                        <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
-                      ))}
                     </div>
                   </div>
                 </div>
@@ -719,121 +741,148 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
       {currentEntity && (
         <div className="print-only">
           {/* Card Front view layout */}
-          <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
-            {/* Emerald glow top banner strip */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
-            
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mt-1.5 bg-slate-50/50 p-1 rounded">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-800 font-sans">NYSC KATSINA CAMP</span>
-              <span className="text-[9px] font-bold font-mono text-emerald-700 bg-emerald-50 border border-emerald-500/25 px-2 py-0.5 rounded">ZONE 1-A</span>
-            </div>
-
-            <div className="flex flex-col items-center gap-4 text-center my-auto">
-              {/* Photo */}
-              {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
-                <div className="relative">
-                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-blue-500 opacity-60 blur-sm" />
-                  <img 
-                    src={currentEntity.photo} 
-                    alt={currentEntity.name} 
-                    className="w-[105px] h-[105px] rounded-2xl object-cover relative border border-slate-200 z-10" 
-                  />
-                </div>
-              ) : (
-                <div className="relative">
-                  <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-blue-555 opacity-80 blur-sm" />
-                  <div className={`w-[105px] h-[105px] rounded-2xl bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-3xl uppercase`}>
-                    {currentEntity.name.slice(0, 2)}
+          <div className="bg-white text-slate-900 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto">
+            {/* Top wave design */}
+            <div className="h-[150px] relative w-full bg-slate-105 overflow-hidden select-none shrink-0 border-b border-slate-100">
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 150" preserveAspectRatio="none" fill="none">
+                <path d="M0,0 L300,0 L300,120 Q200,150 100,110 T0,130 Z" fill="#60a5fa" opacity="0.35" />
+                <path d="M0,0 L300,0 L300,105 Q220,135 120,95 T0,120 Z" fill="#1e3a8a" />
+                <path d="M0,0 L300,0 L300,90 Q240,115 150,85 T0,105 Z" fill="#ec4899" />
+              </svg>
+              
+              <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white drop-shadow-sm font-sans">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-full bg-white/11 backdrop-blur-md border border-white/30 flex items-center justify-center">
+                    <Award className="w-3.5 h-3.5 text-white" />
                   </div>
+                  <span className="text-[11px] uppercase tracking-widest font-black leading-none font-sans">NYSC MARKET</span>
                 </div>
-              )}
+                <span className="text-[8.5px] font-black font-mono bg-white/11 backdrop-blur-md border border-white/20 py-0.5 px-2.5 rounded-full uppercase tracking-wider text-rose-100">
+                  ZONE 1-A
+                </span>
+              </div>
 
-              <div className="space-y-1.5 text-center">
-                <h4 className="text-base font-black uppercase tracking-tight text-black">
-                  {currentEntity.name.toUpperCase()}
-                </h4>
-                <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[11px] font-mono font-bold uppercase tracking-wider text-slate-705">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {currentEntity.role}
-                </div>
-                
-                <div className="mt-2.5 space-y-0.5">
-                  <p className="text-[11px] text-black font-black uppercase tracking-wide">
-                    TRADE: {currentEntity.category}
-                  </p>
-                  <p className="text-[10.5px] text-slate-500 font-semibold truncate">Merchant: {currentEntity.business}</p>
+              {/* Floating Profile Image wrapped in white ring */}
+              <div className="absolute bottom-[-38px] left-1/2 -translate-x-1/2 z-10">
+                <div className="w-24 h-24 rounded-full border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                  {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
+                    <img 
+                      src={currentEntity.photo} 
+                      alt={currentEntity.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo || "preset:emerald")} relative z-10 flex items-center justify-center font-bold text-slate-955 text-2.5xl uppercase`}>
+                      {currentEntity.name.slice(0, 2)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-600">
-              <div className="text-left">
-                <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1">ASSIGNED STALL</span>
-                <strong className="text-slate-850 uppercase text-[12px] font-extrabold">Stand {currentEntity.stand}</strong>
+            <div className="pt-12 px-6 pb-5 flex-1 flex flex-col justify-between text-center font-sans h-full">
+              {/* Name */}
+              <div className="space-y-0.5 text-center mt-2">
+                <h4 className="text-base font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
+                  {currentEntity.name}
+                </h4>
+                <p className="text-[9.5px] font-bold uppercase tracking-widest text-[#1e3a8a]">
+                  {currentEntity.role}
+                </p>
               </div>
-              <div className="text-right">
-                <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1 font-sans">OPERATOR ID NO</span>
-                <strong className="font-mono text-emerald-600 text-[12.5px] font-extrabold">{currentEntity.id}</strong>
+
+              {/* Information block */}
+              <div className="my-2 py-2 px-3 bg-slate-50 border-y border-slate-205 flex flex-col gap-1.5 text-[10px] text-left rounded-lg">
+                <div className="flex justify-between items-center bg-slate-50">
+                  <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">ID NO:</span>
+                  <span className="font-mono font-extrabold text-[#111827]">{currentEntity.id}</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-50">
+                  <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">STALL NUMBER:</span>
+                  <span className="font-extrabold text-[#111827] uppercase">Stand {currentEntity.stand}</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-50">
+                  <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">TRADE CATEGORY:</span>
+                  <span className="font-extrabold text-[#111827] uppercase truncate max-w-[130px]">{currentEntity.category}</span>
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="flex justify-center items-center pb-0.5">
+                <div className="p-0.5 bg-white rounded-lg border border-slate-200 shadow-sm w-9 h-9 flex items-center justify-center">
+                  <QrCode className="w-7 h-7 text-slate-900" style={{ strokeWidth: 1.5 }} />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Card Back view layout */}
-          <div className="bg-white text-slate-900 p-6 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto mt-6">
-            {/* Magnetic strip mock */}
-            <div className="h-8 bg-slate-900 absolute top-8 left-0 w-full flex items-center px-6 border-y border-slate-800">
-              <span className="text-[6.5px] font-mono text-slate-400 tracking-wider">SECURE INTEGRATED MAGNETIC AUDIT TAG</span>
+          <div className="bg-white text-slate-900 rounded-[18px] border border-slate-300 relative flex flex-col justify-between w-[320px] h-[505px] font-sans overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.06)] mx-auto mt-6">
+            {/* Top wave design back side */}
+            <div className="h-[95px] relative w-full bg-slate-105 overflow-hidden select-none shrink-0 border-b border-slate-100">
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 95" preserveAspectRatio="none" fill="none">
+                <path d="M0,0 L300,0 L300,75 Q200,95 100,60 T0,78 Z" fill="#60a5fa" opacity="0.35" />
+                <path d="M0,0 L300,0 L300,65 Q220,83 120,53 T0,69 Z" fill="#1e3a8a" />
+                <path d="M0,0 L300,0 L300,55 Q240,71 150,47 T0,59 Z" fill="#ec4899" />
+              </svg>
+              
+              <div className="absolute top-4 left-5 right-5 flex items-center justify-between text-white font-sans">
+                <span className="text-[10px] uppercase tracking-widest font-black leading-none">TERMS & CONDITIONS</span>
+                <span className="text-[7.5px] font-mono bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider text-rose-100">REF: CP-Z1</span>
+              </div>
             </div>
 
-            <div className="flex-1 flex flex-col justify-between mt-18 text-left">
-              {/* Disclaimer */}
-              <div className="space-y-2 text-[8px] text-slate-500 leading-relaxed border-b border-slate-100 pb-3">
-                <p>This credential is an official delegation for NYSC Katsina Camp Market event permissions. It remains the personal property of general campaign administration.</p>
-                <p>Bearer must showcase this identifier badge at all checkpoints. Alteration, replication, or delegation is subject to clearance revocation.</p>
-                <div className="flex justify-between font-mono text-[7px] text-slate-450 pt-1">
-                  <span>ISSUED: {new Date(currentEntity.createdAt || new Date()).toLocaleDateString()}</span>
-                  <span>REF: CP-Z1</span>
-                </div>
+            <div className="px-6 py-4 flex-1 flex flex-col justify-between gap-3 text-left">
+              <div>
+                <h5 className="text-[9.5px] font-black uppercase tracking-wider text-[#1e3a8a] mb-1.5">ATTENTION & POLICY</h5>
+                <ul className="space-y-1.5 text-[8px] text-slate-500 leading-normal font-sans">
+                  <li className="flex items-start gap-1">
+                    <span className="text-[#ec4899] font-bold">•</span>
+                    <span>This credential is an official delegation for NYSC Katsina Camp Market permission. It remains the property of camp administration.</span>
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-[#ec4899] font-bold">•</span>
+                    <span>Bearer must showcase this identifier badge at checkpoints. Alteration or replication is subject to clearance revocation.</span>
+                  </li>
+                </ul>
               </div>
 
-              {/* Signature and barcode items */}
-              <div className="flex items-center justify-between gap-4 py-2 mt-auto">
-                <div className="p-1 bg-white rounded-lg border border-slate-200 w-12 h-12 flex items-center justify-center shrink-0">
+              {/* VALIDITY EXPIRY */}
+              <div className="border-t border-slate-105 pt-2.5 text-center">
+                <span className="block text-[6.5px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
+                <strong className="text-rose-600 uppercase text-[10px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
+                <p className="text-[7px] text-slate-455">If found, please return to NYSC Camp Secretariat.</p>
+              </div>
+
+              {/* Bottom delegation stats */}
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                <div className="p-0.5 bg-white rounded border border-slate-200 w-9 h-9 flex items-center justify-center shrink-0">
                   <div className="grid grid-cols-4 gap-0.5 w-full h-full p-0.5">
-                    <div className="bg-slate-950 rounded-xs" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                     <div className="bg-transparent" />
-                    <div className="bg-slate-950 rounded-xs" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                     <div className="bg-transparent" />
-                    <div className="bg-slate-950 rounded-xs" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                     <div className="bg-transparent" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                     <div className="bg-transparent" />
-                    <div className="bg-slate-950 rounded-xs" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-950 rounded-2xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                     <div className="bg-transparent" />
-                    <div className="bg-slate-950 rounded-xs" />
-                    <div className="bg-slate-950 rounded-xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
+                    <div className="bg-slate-900 rounded-2xs" />
                   </div>
                 </div>
 
                 <div className="text-right flex-1">
-                  <span className="block text-[7.5px] text-slate-450 uppercase font-mono leading-none font-bold">HEAD OF CAMP MARKET</span>
-                  <span className="text-slate-803 font-serif italic tracking-widest text-[12px] block mt-1 font-bold">Idris Dangalan</span>
-                  <div className="w-18 h-[1px] bg-slate-200 ml-auto mt-0.5" />
-                  <span className="text-[7.5px] text-slate-400 uppercase block mt-0.5 leading-none font-medium">Signature Verified</span>
+                  <span className="block text-[7px] text-slate-455 uppercase font-mono font-bold leading-none font-sans">HEAD OF CAMP MARKET</span>
+                  <span className="text-slate-800 font-serif italic tracking-widest text-[9.5px] block mt-0.5 font-bold">Idris Dangalan</span>
+                  <div className="w-14 h-[1px] bg-slate-200 ml-auto mt-0.5" />
+                  <span className="text-[6.5px] text-slate-400 uppercase block mt-0.5 leading-none">Signature Verified</span>
                 </div>
-              </div>
-            </div>
-
-            <div className="py-2 mt-auto border-t border-slate-100 text-center flex flex-col items-center">
-              <span className="text-[7px] text-emerald-600 font-black tracking-widest font-mono">CAMP CODE CERTIFICATE ACTIVE</span>
-              <div className="flex gap-[1.5px] h-4 mt-2 opacity-60">
-                {[1,3,1,4,2,1,1,3,2,1,2,4,1,2,1,3,1,1,4,2,2,1,3,1,2].map((w, idx) => (
-                  <div key={idx} className="bg-slate-800" style={{ width: `${w}px` }} />
-                ))}
               </div>
             </div>
           </div>
