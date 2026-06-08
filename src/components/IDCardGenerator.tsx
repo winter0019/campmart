@@ -326,10 +326,10 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     </div>
 
                     {/* Floating Profile Image wrapped in white ring */}
-                    <div className="absolute bottom-[-45px] left-1/2 -translate-x-1/2 z-10">
-                      <div className="w-24 h-24 rounded-full border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                    <div className="absolute bottom-[-56px] left-1/2 -translate-x-1/2 z-10">
+                      <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
                         {getPresetGradient(currentEntity.photo) ? (
-                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative flex items-center justify-center font-bold text-slate-950 text-xl uppercase`}>
+                          <div className={`w-full h-full bg-gradient-to-tr ${getPresetGradient(currentEntity.photo)} relative flex items-center justify-center font-bold text-slate-955 text-xl uppercase`}>
                             {currentEntity.name.slice(0, 2)}
                           </div>
                         ) : (
@@ -345,7 +345,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                   </div>
 
                   {/* Body details of badge front */}
-                  <div className="pt-13 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
+                  <div className="pt-15 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
                     
                     {/* Name & Role block */}
                     <div className="space-y-1 w-full text-center">
@@ -424,10 +424,8 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     </div>
 
                     {/* VALIDITY DATES */}
-                    <div className="border-t border-slate-100 pt-2 text-center">
-                      <span className="block text-[6.5px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
-                      <strong className="text-rose-600 uppercase text-[10px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
-                      <p className="text-[7px] text-slate-400">If found, please return to NYSC Camp Secretariat.</p>
+                    <div className="border-t border-slate-100 pt-2.5 text-center pb-1">
+                      <p className="text-[7.5px] text-slate-400">If found, please return to NYSC Camp Secretariat.</p>
                     </div>
 
                     {/* Bottom delegation credentials */}
@@ -589,8 +587,8 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     </div>
 
                     {/* Floating Profile Image wrapped in white ring */}
-                    <div className="absolute bottom-[-36px] left-1/2 -translate-x-1/2 z-10">
-                      <div className="w-22 h-22 rounded-full border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+                    <div className="absolute bottom-[-52px] left-1/2 -translate-x-1/2 z-10">
+                      <div className="w-22 h-26 rounded-xl border-4 border-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
                         {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
                           <img 
                             src={currentEntity.photo} 
@@ -606,7 +604,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     </div>
                   </div>
 
-                  <div className="pt-11 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
+                  <div className="pt-14 px-5 pb-4 flex-1 flex flex-col justify-between text-center">
                     {/* Name */}
                     <div className="space-y-0.5 text-center mt-2">
                       <h4 className="text-sm font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
@@ -674,10 +672,8 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
                     </div>
 
                     {/* VALIDITY EXPIRY */}
-                    <div className="border-t border-slate-100 pt-2 text-center">
-                      <span className="block text-[6px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
-                      <strong className="text-rose-600 uppercase text-[9px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
-                      <p className="text-[6.5px] text-slate-450">If found, please return to NYSC Camp Secretariat.</p>
+                    <div className="border-t border-slate-100 pt-2.5 text-center pb-1">
+                      <p className="text-[7.5px] text-slate-450">If found, please return to NYSC Camp Secretariat.</p>
                     </div>
 
                     {/* Bottom delegation stats */}
@@ -763,8 +759,8 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
               </div>
 
               {/* Floating Profile Image wrapped in white ring */}
-              <div className="absolute bottom-[-38px] left-1/2 -translate-x-1/2 z-10">
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
+              <div className="absolute bottom-[-56px] left-1/2 -translate-x-1/2 z-10">
+                <div className="w-24 h-28 rounded-xl border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.12)] bg-slate-100 overflow-hidden flex items-center justify-center select-none">
                   {currentEntity.photo && !currentEntity.photo.startsWith("preset:") ? (
                     <img 
                       src={currentEntity.photo} 
@@ -780,7 +776,7 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
               </div>
             </div>
 
-            <div className="pt-12 px-6 pb-5 flex-1 flex flex-col justify-between text-center font-sans h-full">
+            <div className="pt-15 px-6 pb-5 flex-1 flex flex-col justify-between text-center font-sans h-full">
               {/* Name */}
               <div className="space-y-0.5 text-center mt-2">
                 <h4 className="text-base font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
@@ -848,10 +844,8 @@ export default function IDCardGenerator({ marketers, onRefresh, userRole = "admi
               </div>
 
               {/* VALIDITY EXPIRY */}
-              <div className="border-t border-slate-105 pt-2.5 text-center">
-                <span className="block text-[6.5px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-0.5">VALID THRU:</span>
-                <strong className="text-rose-600 uppercase text-[10px] font-black tracking-widest font-mono">NOVEMBER 24TH, 2032</strong>
-                <p className="text-[7px] text-slate-455">If found, please return to NYSC Camp Secretariat.</p>
+              <div className="border-t border-slate-105 pt-3 text-center pb-1">
+                <p className="text-[7.5px] text-slate-455">If found, please return to NYSC Camp Secretariat.</p>
               </div>
 
               {/* Bottom delegation stats */}
