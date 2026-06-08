@@ -23,22 +23,35 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // HARDENED PRODUCTION CORS MIDDLEWARE
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Access-Token");
-  
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
+const allowedOrigins = [
+  "https://campmarts.netlify.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      origin.includes("run.app") ||
+                      origin.includes("aistudio.google.com") ||
+                      origin.includes("localhost") ||
+                      origin.includes("127.0.0.1");
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS blocked"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 
 // Default Interfaces
