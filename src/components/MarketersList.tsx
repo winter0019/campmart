@@ -2188,16 +2188,57 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                       Staff: {m.workers.length} registered
                     </span>
 
-                    <button
-                      onClick={() => {
-                        selectMarketerWithPaymentInit(m);
-                        setWorkerError(null);
-                      }}
-                      className="py-1.5 px-3 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 rounded-lg cursor-pointer transition-all flex items-center gap-1 text-[11px]"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Manage Stalls</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {deletingMarketer === m.id ? (
+                        <div className="flex items-center gap-1 bg-rose-950/50 border border-rose-500/20 px-2 py-1 rounded-lg">
+                          <span className="text-[9px] text-rose-300 font-extrabold uppercase shrink-0">Delete?</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMarketer(m.id);
+                            }}
+                            className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition-colors shrink-0"
+                          >
+                            YES
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingMarketer(null);
+                            }}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition-colors shrink-0"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              selectMarketerWithPaymentInit(m);
+                              setWorkerError(null);
+                            }}
+                            className="py-1.5 px-3 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-slate-100 rounded-lg cursor-pointer transition-all flex items-center gap-1 text-[11px]"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Manage Stalls</span>
+                          </button>
+
+                          {userRole === "admin" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingMarketer(m.id);
+                              }}
+                              className="p-1.5 bg-slate-950 border border-slate-800 hover:border-rose-500/30 hover:bg-rose-950/20 text-slate-400 hover:text-rose-450 rounded-lg cursor-pointer transition-all shrink-0"
+                              title="Delete Marketer Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -2324,16 +2365,16 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                     <>
                       {deletingMarketer === selectedMarketer.id ? (
                         <div className="flex items-center gap-2 bg-rose-955/35 border border-rose-500/30 p-1.5 rounded-xl">
-                          <span className="text-[9px] text-rose-300 font-semibold leading-none">Teardown?</span>
+                          <span className="text-[10px] text-rose-300 font-black leading-none uppercase tracking-wide">CONFIRM DELETE?</span>
                           <button
                             onClick={() => handleDeleteMarketer(selectedMarketer.id)}
-                            className="bg-rose-600 hover:bg-rose-500 text-slate-100 text-[10px] font-bold py-1 px-2.5 rounded-md cursor-pointer"
+                            className="bg-rose-600 hover:bg-rose-500 text-slate-100 text-[10px] font-bold py-1 px-3 rounded-md cursor-pointer transition-colors shrink-0"
                           >
-                            YES
+                            Delete Now
                           </button>
                           <button
                             onClick={() => setDeletingMarketer(null)}
-                            className="bg-slate-800 hover:bg-slate-755 text-slate-400 text-[10px] py-1 px-2 rounded-md cursor-pointer"
+                            className="bg-slate-800 hover:bg-slate-755 text-slate-400 text-[10px] py-1 px-2.5 rounded-md cursor-pointer transition-colors shrink-0"
                           >
                             Cancel
                           </button>
@@ -2342,9 +2383,10 @@ export default function MarketersList({ marketers, onRefresh, userRole = "admin"
                         <button
                           onClick={() => setDeletingMarketer(selectedMarketer.id)}
                           className="py-1.5 px-3 bg-rose-950/30 hover:bg-rose-950/50 border border-rose-500/20 hover:border-rose-500/40 text-rose-450 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5"
+                          title="Delete primary marketer campaign profile and all staff workers"
                         >
-                          <Trash2 className="w-4 h-4 shrink-0" />
-                          <span>Teardown Stall</span>
+                          <Trash2 className="w-4 h-4 shrink-0 text-rose-500" />
+                          <span>Delete Marketer Record</span>
                         </button>
                       )}
                     </>
